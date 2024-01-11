@@ -15,7 +15,11 @@ My personal, minimal game template for creating a modern Raylib game using C++ o
 * [npm](https://nodejs.org/) for hot-reloading 
 
 ## Getting Started
-* Use the helper script to initialize the build files
+* Clone the repository:
+```bash
+git clone --depth 1 https://github.com/ingur/raylib-starter.git
+```
+* Use the helper script to initialize the build files:
 ```bash
 ./build.sh init
 ```
@@ -32,5 +36,5 @@ My personal, minimal game template for creating a modern Raylib game using C++ o
 
 ./build.sh watch # starts hot-reloading for the web target
 ```
-> NOTE: when adding/removing source files the build files need to be re-initialized using `./build.sh init`
+> NOTE: when adding/removing source files, the build files need to be re-initialized using `./build.sh init`!
 
