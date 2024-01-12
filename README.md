@@ -2,10 +2,12 @@
   <img src="https://github.com/ingur/raylib-starter/assets/45173070/ae6b5749-c53d-470d-8dc2-36460d37ac5a"/>
 </p>
 
-<h1 align="center">Raylib-Starter</h1>
+<h1 align="center">raylib-starter</h1>
 
 <p align="center">
-  My personal, minimal game template for creating a modern Raylib game using C++ on linux using CMake.
+  My personal, minimal game template for creating simple 
+  <a href="https://github.com/raysan5/raylib">raylib</a> 
+  games using C++ on linux using CMake. 
 </p>
 
 ## Features
