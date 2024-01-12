@@ -34,16 +34,16 @@ git clone --depth 1 https://github.com/ingur/raylib-starter.git
 ```
 * You can now use the following commands:
 ```bash
-./build.sh all # builds for linux, windows and web
-./build.sh init # re-initalizes all build files using CMake
+./build.sh all     # builds for linux, windows and web
+./build.sh init    # re-initalizes all build files using CMake
 
-./build.sh web # builds web target
-./build.sh linux # builds linux target
+./build.sh web     # builds web target
+./build.sh linux   # builds linux target
 ./build.sh windows # builds windows target
 
-./build.sh clean # runs `make clean` for all targets
+./build.sh clean   # runs `make clean` for all targets
 
-./build.sh watch # starts hot-reloading for the web target
+./build.sh watch   # starts hot-reloading for the web target
 ```
 > NOTE: when adding/removing source files, the build files need to be re-initialized using `./build.sh init`
 
