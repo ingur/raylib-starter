@@ -1,5 +1,12 @@
-# Raylib game template
-My personal, minimal game template for creating a modern Raylib game using C++ on linux using CMake.
+<p align="center">
+  <img src="https://github.com/ingur/raylib-starter/assets/45173070/ae6b5749-c53d-470d-8dc2-36460d37ac5a"/>
+</p>
+
+<h1 align="center">Raylib-Starter</h1>
+
+<p align="center">
+  My personal, minimal game template for creating a modern Raylib game using C++ on linux using CMake.
+</p>
 
 ## Features
 * Linux builds
@@ -36,5 +43,5 @@ git clone --depth 1 https://github.com/ingur/raylib-starter.git
 
 ./build.sh watch # starts hot-reloading for the web target
 ```
-> NOTE: when adding/removing source files, the build files need to be re-initialized using `./build.sh init`!
+> NOTE: when adding/removing source files, the build files need to be re-initialized using `./build.sh init`
 
