@@ -21,10 +21,25 @@ if(EMSCRIPTEN)
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
     set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "index")
     target_compile_options(${PROJECT_NAME} PRIVATE "-DPLATFORM_WEB")
-    target_link_libraries(${PROJECT_NAME} "${LIB_DIR}/web/libraylib.a" "-s USE_GLFW=3" -sGL_ENABLE_GET_PROC_ADDRESS --shell-file ${CMAKE_SOURCE_DIR}/shell.html)
+    target_link_libraries(
+        ${PROJECT_NAME} 
+        "${LIB_DIR}/web/libraylib.a" 
+        "-s USE_GLFW=3" 
+        -sGL_ENABLE_GET_PROC_ADDRESS 
+        "--preload-file ${CMAKE_SOURCE_DIR}/assets@assets"
+        "--shell-file ${CMAKE_SOURCE_DIR}/shell.html"
+    )
 elseif(${PLATFORM} STREQUAL "linux")
-    target_link_libraries(${PROJECT_NAME} "${LIB_DIR}/linux/libraylib.a" -lGL -lm -lpthread -ldl -lrt -lX11)
+    target_link_libraries(
+        ${PROJECT_NAME}
+        "${LIB_DIR}/linux/libraylib.a"
+        -lGL -lm -lpthread -ldl -lrt -lX11
+    )
 elseif(${PLATFORM} STREQUAL "windows")
-    target_link_libraries(${PROJECT_NAME} "${LIB_DIR}/windows/libraylib.a" -lopengl32 -lgdi32 -lwinmm)
+    target_link_libraries(
+        ${PROJECT_NAME}
+        "${LIB_DIR}/windows/libraylib.a" 
+        -lopengl32 -lgdi32 -lwinmm
+    )
 endif()
 
