@@ -11,6 +11,7 @@
 </p>
 
 ## Features
+* Includes raylib, raymath, rlgl and raygui
 * Linux builds
 * Windows builds using mingw
 * Web builds using emscripten
@@ -47,3 +48,8 @@ git clone --depth 1 https://github.com/ingur/raylib-starter.git
 ```
 > NOTE: when adding/removing source files, the build files need to be re-initialized using `./build.sh init`
 
+* If you want to use `raygui.h`, do not forget to also include its implementation definition:
+```cpp
+#define RAYGUI_IMPLEMENTATION // only needed once in a single compilation unit
+#include "raylib/raygui.h"
+```
