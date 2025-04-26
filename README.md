@@ -83,5 +83,5 @@ rl.CloseWindow()
 
 ## Credits
 
-* [Raylib](https://github.com/raysan5/raylib) for the amazing library
+* [raylib](https://github.com/raysan5/raylib) for the amazing library
 * [raylib-lua](https://github.com/TSnake41/raylib-lua) for LuaJIT-based raylib bindings
