@@ -1979,7 +1979,31 @@ function rl.EaseElasticInOut(t, b, c, d)
   return postFix * sin((t * d - s) * (2.0 * pi) / p) * 0.5 + c + b
 end
 
--- require function for virtual file system
+-- virtual filesystem utility functions
+
+rl.GetFileExtension = function(fileName)
+	local ext = fileName:match("^.+%.(.+)$")
+	if ext then return "." .. ext else return "" end
+end
+
+rl.GetFileNameWithoutExt = function(fileName)
+	local name = fileName:match("(.+)%.")
+	if name then return name else return fileName end
+end
+
+rl.LoadMusicStream = function(fileName)
+	local data_size = ffi.new("int[1]")
+	local file_data = rl.LoadFileData(fileName, data_size)
+	local file_ext = rl.GetFileExtension(fileName)
+	if file_data ~= nil and data_size[0] > 0 then
+		local music = rl.LoadMusicStreamFromMemory(file_ext, file_data, data_size[0])
+		rl.UnloadFileData(file_data)
+		return music
+	else
+		print("WARNING: Failed to load music file data " .. fileName)
+		return nil
+	end
+end
 
 local __require = require
 function require(modname)
