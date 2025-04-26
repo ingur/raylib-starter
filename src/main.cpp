@@ -38,7 +38,7 @@ static bool RunLuaFiles(const std::vector<std::string> &luaFiles)
 {
     if (!L)
     {
-        TraceLog(LOG_ERROR, "VFS: Lua state is not initialized.");
+        TraceLog(LOG_ERROR, "LUA: Lua state is not initialized.");
         return false;
     }
 
@@ -47,7 +47,7 @@ static bool RunLuaFiles(const std::vector<std::string> &luaFiles)
         const char *file_content = LoadFileText(fileName.c_str());
         if (!file_content)
         {
-            TraceLog(LOG_ERROR, "VFS: Could not load Lua file %s", fileName.c_str());
+            TraceLog(LOG_ERROR, "LUA: Could not load Lua file %s", fileName.c_str());
             return false;
         }
 
@@ -57,7 +57,7 @@ static bool RunLuaFiles(const std::vector<std::string> &luaFiles)
         if (status != LUA_OK)
         {
             const char *error_msg = lua_tostring(L, -1);
-            TraceLog(LOG_ERROR, "VFS: Error running Lua script (%s): %s", fileName.c_str(), error_msg ? error_msg : "Unknown error");
+            TraceLog(LOG_ERROR, "LUA: Error running Lua script (%s): %s", fileName.c_str(), error_msg ? error_msg : "Unknown error");
             lua_pop(L, 1);
             return false;
         }
