@@ -75,7 +75,7 @@ rl.CloseWindow()
 * Basic autocompletion support is available through the `lua/defs.lua` file ([source](https://github.com/TSnake41/raylib-lua/blob/master/tools/autocomplete/plugin.lua))
 * Project name / source files can be configured in `CMakeLists.txt`
 * Asset packing format/structure can be configured in `build.sh`
-* Assets/files can be loaded through the virtual filesystem as normal, e.g:
+* Assets/files can also be loaded through the virtual filesystem, e.g:
   ```lua
   local texture = rl.LoadTexture("assets/texture.png")
   local library = require("lua/library")
