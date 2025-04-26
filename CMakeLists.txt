@@ -20,6 +20,7 @@ set(LIB_DIR "${CMAKE_SOURCE_DIR}/lib")
 
 set(SRCS
     "${INC_DIR}/miniz/miniz.c"
+    "${SRC_DIR}/filesystem.cpp"
     "${SRC_DIR}/main.cpp"
     # Add other source files here
 )
