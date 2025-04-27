@@ -126,10 +126,7 @@ static std::string GetArchiveKeyFromPath(const char *filePath)
     const std::string_view sv(filePath);
     const size_t pos = sv.find('/');
     if (pos == std::string_view::npos || pos == 0 || pos == sv.size() - 1)
-    {
-        TraceLog(LOG_WARNING, "VFS: Invalid file path format (must be key/path): %s", filePath);
         return {};
-    }
 
     return {sv.data(), pos};
 }
