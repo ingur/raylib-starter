@@ -78,7 +78,7 @@ rl.CloseWindow()
 * Assets/files can also be loaded through the virtual filesystem, e.g:
   ```lua
   local texture = rl.LoadTexture("assets/texture.png")
-  local library = require("lua/library")
+  local library = require("library") -- looks in lua/ archive by default
   ```
 
 ## Credits
