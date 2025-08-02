@@ -1992,13 +1992,13 @@ rl.GetFileNameWithoutExt = function(fileName)
 end
 
 local _resource_data_cache = {}
-local function createLoadFromVFSWrapper(resourceType, loadFromMemoryFn)
+local function createLoadWrapper(loadFromMemoryFn)
 	return function(fileName, ...)
 		local data_size = ffi.new("int[1]")
 		local file_data = rl.LoadFileData(fileName, data_size)	
 		if file_data ~= nil and data_size[0] > 0 then
 			local file_ext = rl.GetFileExtension(fileName)
-			local resource = loadFromMemoryFn(file_ext, file_data, data_size[0], ...)	
+			local resource = loadFromMemoryFn(file_ext, file_data, data_size[0], ...)
 			if resource then
 				_resource_data_cache[resource] = file_data
 			else
@@ -2006,7 +2006,7 @@ local function createLoadFromVFSWrapper(resourceType, loadFromMemoryFn)
 			end
 			return resource
 		else
-			print("WARNING: Failed to load " .. resourceType .. " file data: " .. fileName)
+			print("WARNING: Failed to load file data: " .. fileName)
 			return nil
 		end
 	end
@@ -2024,17 +2024,17 @@ local function createUnloadWrapper(originalUnloadFn)
 	end
 end
 
-rl.LoadMusicStream = createLoadFromVFSWrapper("music", rl.LoadMusicStreamFromMemory)
+rl.LoadMusicStream = createLoadWrapper(rl.LoadMusicStreamFromMemory)
 rl.UnloadMusicStream = createUnloadWrapper(raylib.UnloadMusicStream)
 
-rl.LoadWave = createLoadFromVFSWrapper("wave", rl.LoadWaveFromMemory)
+rl.LoadWave = createLoadWrapper(rl.LoadWaveFromMemory)
 rl.UnloadWave = createUnloadWrapper(raylib.UnloadWave)
 
-rl.LoadImage = createLoadFromVFSWrapper("image", rl.LoadImageFromMemory)
-rl.LoadImageAnim = createLoadFromVFSWrapper("image animation", rl.LoadImageAnimFromMemory)
+rl.LoadImage = createLoadWrapper(rl.LoadImageFromMemory)
+rl.LoadImageAnim = createLoadWrapper(rl.LoadImageAnimFromMemory)
 rl.UnloadImage = createUnloadWrapper(raylib.UnloadImage)
 
-rl.LoadFontEx = createLoadFromVFSWrapper("font", rl.LoadFontFromMemory)
+rl.LoadFontEx = createLoadWrapper(rl.LoadFontFromMemory)
 rl.UnloadFont = createUnloadWrapper(raylib.UnloadFont)
 
 local __require = require
