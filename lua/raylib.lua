@@ -1991,19 +1991,51 @@ rl.GetFileNameWithoutExt = function(fileName)
 	if name then return name else return fileName end
 end
 
-rl.LoadMusicStream = function(fileName)
-	local data_size = ffi.new("int[1]")
-	local file_data = rl.LoadFileData(fileName, data_size)
-	local file_ext = rl.GetFileExtension(fileName)
-	if file_data ~= nil and data_size[0] > 0 then
-		local music = rl.LoadMusicStreamFromMemory(file_ext, file_data, data_size[0])
-		rl.UnloadFileData(file_data)
-		return music
-	else
-		print("WARNING: Failed to load music file data " .. fileName)
-		return nil
+local _resource_data_cache = {}
+local function createLoadFromVFSWrapper(resourceType, loadFromMemoryFn)
+	return function(fileName, ...)
+		local data_size = ffi.new("int[1]")
+		local file_data = rl.LoadFileData(fileName, data_size)	
+		if file_data ~= nil and data_size[0] > 0 then
+			local file_ext = rl.GetFileExtension(fileName)
+			local resource = loadFromMemoryFn(file_ext, file_data, data_size[0], ...)	
+			if resource then
+				_resource_data_cache[resource] = file_data
+			else
+				rl.UnloadFileData(file_data)
+			end
+			return resource
+		else
+			print("WARNING: Failed to load " .. resourceType .. " file data: " .. fileName)
+			return nil
+		end
 	end
 end
+
+local function createUnloadWrapper(originalUnloadFn)
+	return function(resource)
+		if resource then
+			if _resource_data_cache[resource] then
+				rl.UnloadFileData(_resource_data_cache[resource])
+				_resource_data_cache[resource] = nil
+			end
+			originalUnloadFn(resource)
+		end
+	end
+end
+
+rl.LoadMusicStream = createLoadFromVFSWrapper("music", rl.LoadMusicStreamFromMemory)
+rl.UnloadMusicStream = createUnloadWrapper(raylib.UnloadMusicStream)
+
+rl.LoadWave = createLoadFromVFSWrapper("wave", rl.LoadWaveFromMemory)
+rl.UnloadWave = createUnloadWrapper(raylib.UnloadWave)
+
+rl.LoadImage = createLoadFromVFSWrapper("image", rl.LoadImageFromMemory)
+rl.LoadImageAnim = createLoadFromVFSWrapper("image animation", rl.LoadImageAnimFromMemory)
+rl.UnloadImage = createUnloadWrapper(raylib.UnloadImage)
+
+rl.LoadFontEx = createLoadFromVFSWrapper("font", rl.LoadFontFromMemory)
+rl.UnloadFont = createUnloadWrapper(raylib.UnloadFont)
 
 local __require = require
 function require(modname)
