@@ -78,6 +78,41 @@ get_cores() {
     fi
 }
 
+# --- Platform Hooks ---
+#
+# Define platform-specific hook functions here:
+#   - prebuild_hook_<platform>: Before cmake build
+#   - postbuild_hook_<platform>: After build, before packaging
+#   - postpackage_hook_<platform>: After packaging
+#
+# Parameters: build_dir, project_name, platform, build_type
+# Example: postbuild_hook_windows_x86_64() { echo "Post-build for $2 on $3"; }
+#
+
+postbuild_hook_linux_x86_64() {
+    local build_dir=$1
+    local project_name=$2
+    local platform=$3
+    local build_type=$4
+    
+    local project_dir="$build_dir/$project_name"
+    
+    # Only create launcher if it's not already a script
+    if [ ! -f "$project_dir/.${project_name}" ]; then
+        mv "$project_dir/$project_name" "$project_dir/.${project_name}"
+        
+        cat > "$project_dir/$project_name" <<-	EOF
+		#!/bin/bash
+		DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
+		cd "\$DIR"
+		export LD_LIBRARY_PATH="\$DIR:\$LD_LIBRARY_PATH"
+		exec "\$DIR/.${project_name}" "\$@"
+		EOF
+        
+        chmod +x "$project_dir/$project_name"
+    fi
+}
+
 # --- Build Functions ---
 
 init() {
@@ -165,6 +200,9 @@ build() {
 
     local project_name="$(get_project_name "$build_dir")"
 
+    # Run pre-build hooks
+    type -t "prebuild_hook_$platform" &>/dev/null && "prebuild_hook_$platform" "$build_dir" "$project_name" "$platform" "$build_type"
+    
     # Build cmake project
     log_info "Building $project_name $platform $build_type"
     cmake --build "$build_dir" -j "$(get_cores)" || {
@@ -177,8 +215,14 @@ build() {
     local lib_dir="$LIB_DIR/$platform"
     cp -upv "$lib_dir"/* "$build_dir/$project_name/"
 
+    # Run post-build hooks
+    type -t "postbuild_hook_$platform" &>/dev/null && "postbuild_hook_$platform" "$build_dir" "$project_name" "$platform" "$build_type"
+
     # Package data files
     package "$build_dir/$project_name"
+    
+    # Run post-package hooks
+    type -t "postpackage_hook_$platform" &>/dev/null && "postpackage_hook_$platform" "$build_dir" "$project_name" "$platform" "$build_type"
 
     # Create distribution archive if requested
     if [ "$package_type" == "zip" ]; then
