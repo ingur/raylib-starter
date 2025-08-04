@@ -17,7 +17,7 @@
 * Includes build helper script for easy development
 * Configurable automatic asset packing/loading using custom zip-files
 
-> NOTE: the old C/C++ only version with web target support can be found [here](https://github.com/ingur/raylib-starter/tree/websupport)
+> NOTE: the old C/C++ only version with basic web target support (no LuaJIT) can be found [here](https://github.com/ingur/raylib-starter/tree/websupport)
 
 ## Requirements
 * `git`, `cmake`, `g++`, `zip`
@@ -49,7 +49,8 @@ You can use the following commands:
 ./build.sh clean            # cleans build environment for all targets
 ./build.sh help             # shows the help message
 ```
-> NOTE: when adding/removing C++ source files, the build files should be re-initialized using `./build.sh init`
+> [!NOTE]
+> When adding/removing C++ source files, the build files should be re-initialized using `./build.sh init`
 
 ## Example Code
 ```lua
