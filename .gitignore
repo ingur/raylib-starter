@@ -1,0 +1,21 @@
+# Build output
+/build/
+/dist/
+/.cache/
+
+# Save files
+/save/
+
+# Python
+__pycache__/
+
+# Devenv
+.devenv*
+devenv.local.nix
+devenv.local.yaml
+
+# direnv
+.direnv
+
+# pre-commit
+.pre-commit-config.yaml
