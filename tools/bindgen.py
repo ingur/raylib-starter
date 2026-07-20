@@ -94,8 +94,27 @@ def gen_colors(api: dict) -> None:
 
 
 def copy_stubs(pocketpy_src: Path) -> None:
-    for name in ("vmath.pyi", "stdc.pyi", "array2d.pyi", "easing.pyi"):
+    for name in ("vmath.pyi", "stdc.pyi", "array2d.pyi", "easing.pyi", "json.pyi"):
         shutil.copy(pocketpy_src / "include" / "typings" / name, ROOT / "types" / name)
+
+
+def drop_host_loaders(api: dict) -> None:
+    """The host binds its own LoadFileText/LoadFileData, see src/vfs.c."""
+    skip = {"LoadFileText", "LoadFileData", "UnloadFileText", "UnloadFileData"}
+    api["functions"] = [f for f in api["functions"] if f["name"] not in skip]
+
+
+def gen_host_stubs() -> None:
+    stub = ROOT / "types" / "raylib.pyi"
+    entries = (
+        "\n# host file loaders, they read through the vfs (src/vfs.c)\n"
+        "def LoadFileText(fileName: str, /) -> str:\n"
+        '    """Load a text file as str, raises OSError if missing"""\n'
+        "\n"
+        "def LoadFileData(fileName: str, /) -> bytes:\n"
+        '    """Load a binary file as bytes, raises OSError if missing"""\n'
+    )
+    stub.write_text(stub.read_text() + entries)
 
 
 def main() -> None:
@@ -103,9 +122,11 @@ def main() -> None:
         sys.exit(__doc__.strip())
     raylib_src, pocketpy_src = Path(sys.argv[1]), Path(sys.argv[2])
     api = load_api(raylib_src)
+    drop_host_loaders(api)
     (ROOT / "types").mkdir(exist_ok=True)
     gen_module(api, pocketpy_src)
     gen_colors(api)
+    gen_host_stubs()
     copy_stubs(pocketpy_src)
     print(f"bound {len(api['functions'])} functions, {len(api['enums'])} enums")
 

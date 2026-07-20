@@ -95,6 +95,7 @@ static bool Boot(void) {
     py_callbacks()->importfile = ImportFile;
     py__add_module_raylib();
     py__add_raylib_colors();
+    BindVfsLoaders();
     updateName = py_name("update");
 
     char *source = ImportFile("main.py", NULL);
@@ -120,6 +121,8 @@ static void Reload(void) {
                     free(reloadState);
                     reloadState = malloc(len);
                     if (reloadState) memcpy(reloadState, state, len);
+                } else if (!py_isnone(py_retval())) {
+                    TraceLog(LOG_WARNING, "SCRIPT: before_reload state must be a string, ignored");
                 }
             } else {
                 py_clearexc(NULL);
@@ -221,6 +224,9 @@ static void ErrorFrame(void) {
 static void Frame(void) {
     if (scriptOk) scriptOk = RunUpdate();
     else ErrorFrame();
+#if defined(__EMSCRIPTEN__)
+    if (quit) emscripten_cancel_main_loop();
+#endif
 }
 
 #if !defined(__EMSCRIPTEN__)
@@ -238,11 +244,12 @@ static long LatestModTime(const char *dir, const char *filter, unsigned int *cou
 }
 
 static void WatchFiles(void) {
-    static int cooldown;
+    static double next;
     static long seen;
     static unsigned int seenCount;
-    if (++cooldown < 30) return;
-    cooldown = 0;
+    double now = GetTime();
+    if (now < next) return;
+    next = now + 0.5;
 
     unsigned int count = 0;
     long scripts = LatestModTime("game", ".py", &count);
@@ -262,6 +269,10 @@ static void WatchFiles(void) {
 #endif
 
 int main(void) {
+#if defined(NDEBUG) && !defined(__EMSCRIPTEN__)
+    // release: resolve the pak, save/ and loose files next to the executable
+    ChangeDirectory(GetApplicationDirectory());
+#endif
     MountAssets();
 #if !defined(__EMSCRIPTEN__)
     MakeDirectory("save");  // writable save dir, on web an IDBFS mount (src/web_save.js)

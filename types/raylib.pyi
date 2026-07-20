@@ -934,16 +934,6 @@ def MemFree(ptr: intptr, /) -> None:
 
     Internal memory free"""
 
-def LoadFileData(fileName: str, dataSize: intptr, /) -> intptr:
-    """Wraps `unsigned char * LoadFileData(const char * fileName, int * dataSize)`
-
-    Load file data as byte array (read)"""
-
-def UnloadFileData(data: intptr, /) -> None:
-    """Wraps `void UnloadFileData(unsigned char * data)`
-
-    Unload file data allocated by LoadFileData()"""
-
 def SaveFileData(fileName: str, data: intptr, dataSize: int, /) -> bool:
     """Wraps `bool SaveFileData(const char * fileName, void * data, int dataSize)`
 
@@ -953,16 +943,6 @@ def ExportDataAsCode(data: intptr, dataSize: int, fileName: str, /) -> bool:
     """Wraps `bool ExportDataAsCode(const unsigned char * data, int dataSize, const char * fileName)`
 
     Export data to code (.h), returns true on success"""
-
-def LoadFileText(fileName: str, /) -> intptr:
-    """Wraps `char * LoadFileText(const char * fileName)`
-
-    Load text data from file (read), returns a '\0' terminated string"""
-
-def UnloadFileText(text: intptr, /) -> None:
-    """Wraps `void UnloadFileText(char * text)`
-
-    Unload file text data allocated by LoadFileText()"""
 
 def SaveFileText(fileName: str, text: str, /) -> bool:
     """Wraps `bool SaveFileText(const char * fileName, const char * text)`
@@ -3663,3 +3643,10 @@ BLACK: color32
 BLANK: color32
 MAGENTA: color32
 RAYWHITE: color32
+
+# host file loaders, they read through the vfs (src/vfs.c)
+def LoadFileText(fileName: str, /) -> str:
+    """Load a text file as str, raises OSError if missing"""
+
+def LoadFileData(fileName: str, /) -> bytes:
+    """Load a binary file as bytes, raises OSError if missing"""

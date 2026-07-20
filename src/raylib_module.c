@@ -4498,27 +4498,6 @@ static bool cfunc__MemFree(int argc, py_Ref argv) {
     py_newnone(py_retval());
     return true;
 }
-static bool cfunc__LoadFileData(int argc, py_Ref argv) {
-    PY_CHECK_ARGC(2);
-    const char * _0;
-    if(!py_checkstr(py_arg(0))) return false;
-    _0 = py_tostr(py_arg(0));
-    int * _1;
-    if(!py_checkint(py_arg(1))) return false;
-    _1 = (int *)py_toint(py_arg(1));
-    unsigned char * res = LoadFileData(_0, _1);
-    py_newint(py_retval(), (py_i64)res);
-    return true;
-}
-static bool cfunc__UnloadFileData(int argc, py_Ref argv) {
-    PY_CHECK_ARGC(1);
-    unsigned char * _0;
-    if(!py_checkint(py_arg(0))) return false;
-    _0 = (unsigned char *)py_toint(py_arg(0));
-    UnloadFileData(_0);
-    py_newnone(py_retval());
-    return true;
-}
 static bool cfunc__SaveFileData(int argc, py_Ref argv) {
     PY_CHECK_ARGC(3);
     const char * _0;
@@ -4547,24 +4526,6 @@ static bool cfunc__ExportDataAsCode(int argc, py_Ref argv) {
     _2 = py_tostr(py_arg(2));
     bool res = ExportDataAsCode(_0, _1, _2);
     py_newbool(py_retval(), res);
-    return true;
-}
-static bool cfunc__LoadFileText(int argc, py_Ref argv) {
-    PY_CHECK_ARGC(1);
-    const char * _0;
-    if(!py_checkstr(py_arg(0))) return false;
-    _0 = py_tostr(py_arg(0));
-    char * res = LoadFileText(_0);
-    py_newint(py_retval(), (py_i64)res);
-    return true;
-}
-static bool cfunc__UnloadFileText(int argc, py_Ref argv) {
-    PY_CHECK_ARGC(1);
-    char * _0;
-    if(!py_checkint(py_arg(0))) return false;
-    _0 = (char *)py_toint(py_arg(0));
-    UnloadFileText(_0);
-    py_newnone(py_retval());
     return true;
 }
 static bool cfunc__SaveFileText(int argc, py_Ref argv) {
@@ -12513,12 +12474,8 @@ void py__add_module_raylib() {
     py_bindfunc(mod, "MemAlloc", &cfunc__MemAlloc);
     py_bindfunc(mod, "MemRealloc", &cfunc__MemRealloc);
     py_bindfunc(mod, "MemFree", &cfunc__MemFree);
-    py_bindfunc(mod, "LoadFileData", &cfunc__LoadFileData);
-    py_bindfunc(mod, "UnloadFileData", &cfunc__UnloadFileData);
     py_bindfunc(mod, "SaveFileData", &cfunc__SaveFileData);
     py_bindfunc(mod, "ExportDataAsCode", &cfunc__ExportDataAsCode);
-    py_bindfunc(mod, "LoadFileText", &cfunc__LoadFileText);
-    py_bindfunc(mod, "UnloadFileText", &cfunc__UnloadFileText);
     py_bindfunc(mod, "SaveFileText", &cfunc__SaveFileText);
     py_bindfunc(mod, "FileRename", &cfunc__FileRename);
     py_bindfunc(mod, "FileRemove", &cfunc__FileRemove);

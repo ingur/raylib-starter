@@ -1,0 +1,5 @@
+# bindgen output, regenerated on raylib/pocketpy bumps
+src/raylib_module.c linguist-generated
+src/rl_colors.c linguist-generated
+types/*.pyi linguist-generated
+types/__builtins__.pyi -linguist-generated

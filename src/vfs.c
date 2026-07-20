@@ -28,7 +28,7 @@ static void *ReadDisk(const char *path, int *size, Alloc alloc, Dealloc dealloc)
     fseek(f, 0, SEEK_END);
     long len = ftell(f);
     fseek(f, 0, SEEK_SET);
-    if (len <= 0) {
+    if (len < 0) {  // empty files are valid, only reject ftell errors
         fclose(f);
         return NULL;
     }
@@ -60,7 +60,7 @@ static void *ReadPak(const char *path, int *size, Alloc alloc, Dealloc dealloc) 
     size_t len = (size_t)stat.m_uncomp_size;
     unsigned char *data = alloc(len);
     if (data == NULL) return NULL;
-    if (!mz_zip_reader_extract_to_mem(&zip, index, data, len, 0)) {
+    if (len && !mz_zip_reader_extract_to_mem(&zip, index, data, len, 0)) {
         dealloc(data);
         return NULL;
     }
@@ -95,6 +95,36 @@ char *ImportFile(const char *path, int *dataSize) {
     if (data == NULL) data = ReadAny(path, &size, AllocPk, FreePk);
     if (dataSize) *dataSize = size;
     return data;
+}
+
+// host file loaders for python. They read through the vfs and return real
+// python values, so nothing needs manual freeing.
+static bool PyLoadFileText(int argc, py_Ref argv) {
+    PY_CHECK_ARGC(1);
+    PY_CHECK_ARG_TYPE(0, tp_str);
+    int size = 0;
+    char *data = ReadAny(py_tostr(py_arg(0)), &size, AllocPk, FreePk);
+    if (data == NULL) return OSError("[%s] not found", py_tostr(py_arg(0)));
+    py_newstrv(py_retval(), (c11_sv){data, size});
+    PK_FREE(data);
+    return true;
+}
+
+static bool PyLoadFileData(int argc, py_Ref argv) {
+    PY_CHECK_ARGC(1);
+    PY_CHECK_ARG_TYPE(0, tp_str);
+    int size = 0;
+    unsigned char *data = ReadAny(py_tostr(py_arg(0)), &size, AllocPk, FreePk);
+    if (data == NULL) return OSError("[%s] not found", py_tostr(py_arg(0)));
+    memcpy(py_newbytes(py_retval(), size), data, (size_t)size);
+    PK_FREE(data);
+    return true;
+}
+
+void BindVfsLoaders(void) {
+    py_GlobalRef mod = py_getmodule("raylib");
+    py_bindfunc(mod, "LoadFileText", PyLoadFileText);
+    py_bindfunc(mod, "LoadFileData", PyLoadFileData);
 }
 
 bool MountAssets(void) {
