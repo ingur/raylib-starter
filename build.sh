@@ -29,6 +29,13 @@ project_name() {
 # --- Commands ---
 
 run() {
+    set_config "${1:-debug}"
+    unset WATCH  # run never watches, dev does
+    target linux "$CONFIG" run
+}
+
+dev() {
+    export WATCH=1  # hot reload, see WatchFiles in src/main.c
     target linux Debug run
 }
 
@@ -49,6 +56,7 @@ web() {
     fi
     set_config "${1:-}"
     target web "$CONFIG"
+    echo "test locally: emrun build/web/$CONFIG/$(project_name).html"
 }
 
 dist() {
@@ -80,7 +88,8 @@ clean() {
 show_help() {
     echo "Usage: $0 <command> [options]"
     echo "Commands:"
-    echo "  run       Build and run the game (debug)"
+    echo "  run       Build and run the game [debug|release]"
+    echo "  dev       Build and run the game with hot reload"
     echo "  linux     Build the linux target [debug|release]"
     echo "  windows   Build the windows target [debug|release]"
     echo "  web       Build the web target [debug|release]"
@@ -88,10 +97,17 @@ show_help() {
     echo "  bindgen   Regenerate the python bindings and type stubs"
     echo "  clean     Clean build environment"
     echo "  help      Show this help message"
+    echo ""
+    echo "Build targets default to release, run defaults to debug."
 }
 
 case "${1:-help}" in
-    run|linux|windows|web|dist|bindgen|clean) "$1" "${2:-}" ;;
+    run|linux|windows|web)
+        [ "$#" -le 2 ] || { echo "$1 takes at most one option"; exit 1; }
+        "$1" "${2:-}" ;;
+    dev|dist|bindgen|clean)
+        [ "$#" -le 1 ] || { echo "$1 takes no options"; exit 1; }
+        "$1" ;;
     help|--help|-h) show_help ;;
     *) echo "Unknown command: $1"; show_help; exit 1 ;;
 esac

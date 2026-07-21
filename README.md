@@ -42,10 +42,16 @@ Use the helper script to build and run the game:
 ./build.sh run
 ```
 
+There is also a hot reload mode. Save a file and the game reloads:
+```bash
+./build.sh dev
+```
+
 You can use the following commands:
 ```bash
 # usage: ./build.sh <command> [options]
-./build.sh run        # build and run the game (debug)
+./build.sh run        # build and run the game [debug|release]
+./build.sh dev        # build and run the game with hot reload
 ./build.sh linux      # build the linux target [debug|release]
 ./build.sh windows    # build the windows target [debug|release]
 ./build.sh web        # build the web target [debug|release]
@@ -54,6 +60,9 @@ You can use the following commands:
 ./build.sh clean      # clean build environment
 ./build.sh help       # show the help message
 ```
+
+Build targets default to release, run defaults to debug.
+
 > [!NOTE]
 > The first build compiles raylib and pocketpy from source and takes a few minutes. Later builds are incremental. Binaries land in `build/<target>/<config>/`.
 
@@ -80,8 +89,10 @@ def update():
 * Define `update()` to run code every frame
 * Return `True` from `update()` to quit the game
 * Window startup settings live in `game/window.py`
-* Only debug builds enable hot reload and the `DEV` builtin
-* Define `before_reload()` and `after_reload(state)` to carry a state string across hot reloads
+* Debug builds enable the `DEV` builtin
+* `./build.sh dev` enables hot reloading
+* `./build.sh run release` plays the packed build, exactly what players get
+* Define `before_reload()` and `after_reload(state)` to carry a state string across reloads
 * Reloads never free GPU resources
 * Unload them in `before_reload()` like the demo does
 * Project name and dependency versions live in `CMakeLists.txt`

@@ -5,9 +5,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #if defined(__EMSCRIPTEN__)
 #include <emscripten/emscripten.h>
+#else
+#include <sys/stat.h>
 #endif
 
 void py__add_module_raylib(void);
@@ -25,6 +28,7 @@ static py_Name updateName;
 static bool scriptOk;
 static bool quit;
 static bool devMode;
+static bool watch;
 static char *reloadState;
 
 static void CaptureError(void) {
@@ -216,9 +220,11 @@ static void ErrorFrame(void) {
     BeginScissorMode(0, top, GetScreenWidth(), bottom - top);
     DrawText(wrappedError, ERR_PAD, y, ERR_FONT, RAYWHITE);
     EndScissorMode();
-    DrawText("fix the file and save, or press R to reload", ERR_PAD, GetScreenHeight() - ERR_PAD, ERR_FONT, GRAY);
+    if (devMode)
+        DrawText(watch ? "save a file or press F5 to reload" : "press F5 to reload",
+                 ERR_PAD, GetScreenHeight() - ERR_PAD, ERR_FONT, GRAY);
     EndDrawing();
-    if (IsKeyPressed(KEY_R)) Reload();
+    if (devMode && IsKeyPressed(KEY_F5)) Reload();
 }
 
 static void Frame(void) {
@@ -230,38 +236,55 @@ static void Frame(void) {
 }
 
 #if !defined(__EMSCRIPTEN__)
-static long LatestModTime(const char *dir, const char *filter, unsigned int *count) {
-    if (!DirectoryExists(dir)) return 0;
-    long latest = 0;
+// avalanche mixer
+static uint64_t Mix64(uint64_t x) {
+    x ^= x >> 33; x *= 0xff51afd7ed558ccdULL;
+    x ^= x >> 33; x *= 0xc4ceb9fe1a85ec53ULL;
+    return x ^ (x >> 33);
+}
+
+// fingerprint each file as hash(path, size, mtime)
+static void StampDir(const char *dir, const char *filter, uint64_t *stamp, unsigned int *count) {
+    if (!DirectoryExists(dir)) return;
     FilePathList files = LoadDirectoryFilesEx(dir, filter, true);
     for (unsigned int i = 0; i < files.count; i++) {
-        long time = GetFileModTime(files.paths[i]);
-        if (time > latest) latest = time;
+        struct stat info;
+        if (stat(files.paths[i], &info) != 0) continue;
+        uint64_t h = 5381;
+        for (const char *p = files.paths[i]; *p; p++) h = (h * 33) ^ (unsigned char)*p;
+        h = (h * 33) ^ (uint64_t)info.st_size;
+        h = (h * 33) ^ (uint64_t)info.st_mtime;
+#if defined(__linux__)
+        h = (h * 33) ^ (uint64_t)info.st_mtim.tv_nsec;  // include subsecond mtimes
+#endif
+        *stamp += Mix64(h);
+        *count += 1;
     }
-    *count += files.count;
     UnloadDirectoryFiles(files);
-    return latest;
 }
 
 static void WatchFiles(void) {
     static double next;
-    static long seen;
+    static uint64_t seen;
     static unsigned int seenCount;
+    static bool initialized;
     double now = GetTime();
     if (now < next) return;
     next = now + 0.5;
 
+    uint64_t stamp = 0;
     unsigned int count = 0;
-    long scripts = LatestModTime("game", ".py", &count);
-    long assets = LatestModTime("assets", NULL, &count);
-    long latest = scripts > assets ? scripts : assets;
+    StampDir("game", ".py", &stamp, &count);
+    StampDir("assets", NULL, &stamp, &count);
 
-    if (seen == 0) {
-        seen = latest;
+    if (!initialized) {
+        seen = stamp;
         seenCount = count;
+        initialized = true;
+        return;
     }
-    if (latest > seen || count != seenCount) {
-        seen = latest;
+    if (stamp != seen || count != seenCount) {
+        seen = stamp;
         seenCount = count;
         Reload();
     }
@@ -278,7 +301,11 @@ int main(void) {
     MakeDirectory("save");  // writable save dir, on web an IDBFS mount (src/web_save.js)
 #endif
 #if !defined(NDEBUG)
-    devMode = true;  // debug builds are dev builds, hot reload and the DEV builtin
+    devMode = true;  // debug builds get the DEV builtin
+#endif
+#if !defined(__EMSCRIPTEN__)
+    const char *w = getenv("WATCH");  // ./build.sh dev sets WATCH=1
+    watch = devMode && w != NULL && strcmp(w, "1") == 0;
 #endif
     py_initialize();
     LoadWindowConfig();
@@ -297,7 +324,7 @@ int main(void) {
     emscripten_set_main_loop(Frame, 0, 1);
 #else
     while (!WindowShouldClose() && !quit) {
-        if (devMode) WatchFiles();
+        if (watch) WatchFiles();
         Frame();
     }
 #endif

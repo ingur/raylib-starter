@@ -7,7 +7,6 @@ sprite = rl.LoadTexture("assets/sprite.png")
 pos = vec2(60, 60)
 vel = vec2(220, 170)
 
-
 # runs every frame, return True to quit
 def update():
     global pos, vel
@@ -23,11 +22,10 @@ def update():
     rl.BeginDrawing()
     rl.ClearBackground(rl.RAYWHITE)
     rl.DrawTextureV(sprite, pos, rl.WHITE)
-    rl.DrawText("edit game/main.py and save, the game reloads, the box keeps going", 20, 20, 20, rl.DARKGRAY)
+    rl.DrawText("with ./build.sh dev, edit game/main.py and save, the box keeps going", 20, 20, 20, rl.DARKGRAY)
     rl.EndDrawing()
 
-
-# dev only: hot reload hooks, delete them to get a fresh boot on every save
+# reload hooks, delete them to get a fresh boot on every reload
 def before_reload():
     rl.UnloadTexture(sprite)  # reloads never free GPU resources
     return json.dumps([pos.x, pos.y, vel.x, vel.y])

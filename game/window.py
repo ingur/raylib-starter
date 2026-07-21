@@ -1,5 +1,5 @@
 # Startup settings, read before the window is created. Keep it to plain values.
-# Title, size and fps also apply on hot reload, the rest needs a restart.
+# Title, size and fps also apply on reload, the rest needs a restart.
 # Your game can `import window` to read these values back.
 
 # text in the title bar

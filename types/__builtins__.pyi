@@ -1,2 +1,2 @@
-# DEV is injected by the host, True during development (hot reload active)
+# DEV is injected by the host, True in debug builds
 DEV: bool
