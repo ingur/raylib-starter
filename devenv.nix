@@ -1,18 +1,20 @@
 { pkgs, lib, ... }:
 
 {
-  # clang and clangd for the C host.
+  # zig builds every native target, zls comes along for build.zig
+  languages.zig.enable = true;
+  languages.zig.version = "0.16.0";
+
+  # clangd for the C host, it reads the generated compile_flags.txt
   languages.cplusplus.enable = true;
   languages.cplusplus.lsp.package = pkgs.clang-tools;
 
   packages = [
     pkgs.git
-    pkgs.cmake
-    pkgs.ninja
-    pkgs.pkg-config
+    pkgs.curl
     pkgs.zip
-    pkgs.emscripten                    # web
-    pkgs.pkgsCross.mingwW64.stdenv.cc  # windows cross compiler
+    pkgs.pkg-config
+    pkgs.emscripten
 
     # python tooling: LSP for game scripts, deps for bindgen
     pkgs.basedpyright
@@ -30,9 +32,10 @@
     pkgs.xorg.libXinerama
     pkgs.xorg.libXcursor
     pkgs.xorg.libXi
+    pkgs.xorg.libXrender
+    pkgs.xorg.libXfixes
+    pkgs.xorg.libXext
   ];
-
-  env.EMSCRIPTEN = "${pkgs.emscripten}/share/emscripten";
 
   # GLFW dlopens these at runtime.
   env.LD_LIBRARY_PATH = lib.makeLibraryPath [

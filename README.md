@@ -23,10 +23,10 @@
 > The previous LuaJIT (and C/C++) version lives on the [`luajit`](https://github.com/ingur/raylib-starter/tree/luajit) branch.
 
 ## Requirements
-* `git`, `cmake`, `ninja`, `zip`, and a C compiler
-* Linux: OpenGL, X11 and Wayland development libraries (see `devenv.nix`)
-* `emscripten` for the web target, `mingw-w64` for the windows target
-* Optional: `python3` with `pycparser` and `pcpp`, only needed for `./build.sh bindgen`
+* `git`, [`zig`](https://ziglang.org/download/) 0.16, and `zip`
+* Linux: `pkg-config`, OpenGL, X11 and Wayland development libraries (see `devenv.nix`)
+* `emscripten` for the web target
+* Optional: `curl` and `python3` with `pycparser` and `pcpp`, only needed for `./build.sh bindgen`
 * Develop on Linux, or on Windows via WSL2
 * Optional: [devenv](https://devenv.sh) provisions all of the above in one shell
 
@@ -54,7 +54,7 @@ You can use the following commands:
 ./build.sh dev        # build and run the game with hot reload
 ./build.sh linux      # build the linux target [debug|release]
 ./build.sh windows    # build the windows target [debug|release]
-./build.sh web        # build the web target [debug|release]
+./build.sh web        # build the web target
 ./build.sh dist       # package release zips for all platforms into dist/
 ./build.sh bindgen    # regenerate the python bindings and type stubs
 ./build.sh clean      # clean build environment
@@ -64,7 +64,7 @@ You can use the following commands:
 Build targets default to release, run defaults to debug.
 
 > [!NOTE]
-> The first build compiles raylib and pocketpy from source and takes a few minutes. Later builds are incremental. Binaries land in `build/<target>/<config>/`.
+> The first build downloads and compiles raylib and pocketpy from source. Later builds are incremental. Binaries land in `zig-out/`.
 
 Using [devenv](https://devenv.sh)? `devenv shell` (or `direnv allow` once) provides the whole toolchain. The same script then just works.
 
@@ -92,10 +92,11 @@ def update():
 * Debug builds enable the `DEV` builtin
 * `./build.sh dev` enables hot reloading
 * `./build.sh run release` plays the packed build, exactly what players get
+* The windows target cross-compiles from Linux, no extra toolchain needed
 * Define `before_reload()` and `after_reload(state)` to carry a state string across reloads
 * Reloads never free GPU resources
 * Unload them in `before_reload()` like the demo does
-* Project name and dependency versions live in `CMakeLists.txt`
+* Project name lives in `build.zig`, dependency versions in `build.zig.zon`
 * Rerun `bindgen` after a raylib or pocketpy bump
 * Vectors and colors come from the built-in `vmath` module (`vec2`, `vec3`, `color32`)
 * `assets/` and `game/` are packed into `assets.pak`, a plain zip
@@ -122,7 +123,7 @@ def update():
 * Use the `rl` loaders for packed assets
 * Some raylib functions take C pointers, shown as `intptr` in the stubs
 * The built-in `stdc` module bridges them with `addressof`, `malloc`, and typed boxes like `Float`
-* Test web builds locally with `emrun build/web/Release/game.html`
+* Test web builds locally with `emrun zig-out/web/game.html`
 
 ## Credits
 

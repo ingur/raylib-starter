@@ -1,0 +1,25 @@
+.{
+    .name = .game,
+    .version = "0.0.0",
+    .minimum_zig_version = "0.16.0",
+    .fingerprint = 0x232b318cede6101e,
+
+    // Update dependencies here, `zig fetch --save=<name> <url>` pins the hash.
+    // After a raylib bump, rerun `bindgen` to refresh the python bindings.
+    .dependencies = .{
+        .raylib = .{
+            .url = "https://github.com/raysan5/raylib/archive/refs/tags/6.0.tar.gz",
+            .hash = "raylib-6.0.0-whq8uCSwLgWWeF3ec3dbG6Rr36SLFL-s2WJ1Q_2E22Bb",
+        },
+        .pocketpy = .{
+            .url = "https://github.com/pocketpy/pocketpy/archive/refs/tags/v2.1.8.tar.gz",
+            .hash = "N-V-__8AAFWqhwAHudC5XxJRvk7sR8kx6W3vel0VV0YNAK_a",
+        },
+        .miniz = .{
+            .url = "https://github.com/richgel999/miniz/releases/download/3.1.2/miniz-3.1.2.zip",
+            .hash = "N-V-__8AACZ9BwBtpix1JS569yNZcDzDf9abe3Zimx8glq9u",
+        },
+    },
+
+    .paths = .{""},
+}
