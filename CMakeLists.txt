@@ -1,9 +1,9 @@
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.25)
 
 # Rename the binary here.
 project(game C)
 
-# Update dependencies here. Any git tag, branch or commit works.
+# Update dependencies here. Any git tag or branch works.
 # After a raylib bump, rerun `bindgen` to refresh the python bindings.
 set(RAYLIB_VERSION "6.0" CACHE STRING "raylib git ref")
 set(POCKETPY_VERSION "v2.1.8" CACHE STRING "pocketpy git ref")
