@@ -26,6 +26,7 @@ static WindowConfig config;
 static char lastError[2048];
 static py_Name updateName;
 static bool scriptOk;
+static bool booted;
 static bool quit;
 static bool devMode;
 static bool watch;
@@ -115,16 +116,17 @@ static bool Boot(void) {
 }
 
 static void Reload(void) {
-    if (scriptOk) {
+    if (booted) {
         py_ItemRef before = py_getglobal(py_name("before_reload"));
         if (before != NULL) {
             if (py_call(before, 0, NULL)) {
                 if (py_isstr(py_retval())) {
-                    const char *state = py_tostr(py_retval());
-                    size_t len = strlen(state) + 1;
-                    free(reloadState);
-                    reloadState = malloc(len);
-                    if (reloadState) memcpy(reloadState, state, len);
+                    if (reloadState == NULL) {  // keep retained state until it applies
+                        const char *state = py_tostr(py_retval());
+                        size_t len = strlen(state) + 1;
+                        reloadState = malloc(len);
+                        if (reloadState) memcpy(reloadState, state, len);
+                    }
                 } else if (!py_isnone(py_retval())) {
                     TraceLog(LOG_WARNING, "SCRIPT: before_reload state must be a string, ignored");
                 }
@@ -140,7 +142,7 @@ static void Reload(void) {
     SetWindowTitle(config.title);
     if (!(config.flags & FLAG_FULLSCREEN_MODE)) SetWindowSize(config.width, config.height);
     SetTargetFPS(config.fps);
-    scriptOk = Boot();
+    scriptOk = booted = Boot();
 
     if (scriptOk && reloadState != NULL) {
         py_ItemRef after = py_getglobal(py_name("after_reload"));
@@ -318,7 +320,7 @@ int main(void) {
     }
     SetTargetFPS(config.fps);
 
-    scriptOk = Boot();
+    scriptOk = booted = Boot();
 
 #if defined(__EMSCRIPTEN__)
     emscripten_set_main_loop(Frame, 0, 1);
