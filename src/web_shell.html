@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>game</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      overscroll-behavior: none;
+    }
+
+    canvas {
+      display: block;
+      background: #000;
+      outline: none;
+      touch-action: none;
+    }
+
+    #status {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 2rem;
+      color: #ddd;
+      background: #000;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    #status[hidden] {
+      display: none;
+    }
+
+    #status-content {
+      display: grid;
+      width: min(18rem, 80vw);
+      gap: 0.75rem;
+    }
+
+    #status-text {
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    #status.error #status-text {
+      color: #ffb4ab;
+    }
+
+    progress {
+      width: 100%;
+      height: 0.35rem;
+      border: 0;
+      border-radius: 999px;
+      overflow: hidden;
+      color: #ddd;
+      background: #333;
+    }
+
+    progress::-webkit-progress-bar {
+      background: #333;
+    }
+
+    progress::-webkit-progress-value {
+      background: #ddd;
+    }
+
+    progress::-moz-progress-bar {
+      background: #ddd;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas" tabindex="-1"></canvas>
+
+  <div id="status" role="status" aria-live="polite">
+    <div id="status-content">
+      <div id="status-text">Loading...</div>
+      <progress id="progress" value="0" max="1" hidden></progress>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const status = document.getElementById("status");
+    const statusText = document.getElementById("status-text");
+    const progress = document.getElementById("progress");
+    let failed = false;
+
+    function fitCanvas() {
+      if (!canvas.width || !canvas.height) return;
+
+      const scale = Math.min(
+        window.innerWidth / canvas.width,
+        window.innerHeight / canvas.height,
+      );
+      canvas.style.width = `${Math.floor(canvas.width * scale)}px`;
+      canvas.style.height = `${Math.floor(canvas.height * scale)}px`;
+    }
+
+    function setStatus(text) {
+      if (failed) return;
+      if (!text) {
+        status.hidden = true;
+        return;
+      }
+
+      status.hidden = false;
+      const match = text.match(/^(.*?)\s*\(([\d.]+)\/([\d.]+)\)$/);
+      if (match) {
+        const value = Number(match[2]);
+        const max = Number(match[3]);
+        statusText.textContent = match[1].trim();
+        progress.value = value;
+        progress.max = max;
+        progress.hidden = !(max > 0);
+      } else {
+        statusText.textContent = text;
+        progress.hidden = true;
+      }
+    }
+
+    function showError(message) {
+      failed = true;
+      status.classList.add("error");
+      status.setAttribute("role", "alert");
+      statusText.textContent = message;
+      progress.hidden = true;
+      status.hidden = false;
+    }
+
+    new MutationObserver(fitCanvas).observe(canvas, {
+      attributes: true,
+      attributeFilter: ["width", "height"],
+    });
+    window.addEventListener("resize", fitCanvas);
+    canvas.addEventListener("pointerdown", () => canvas.focus());
+    canvas.addEventListener("contextmenu", (event) => event.preventDefault());
+    canvas.addEventListener("webglcontextlost", (event) => {
+      event.preventDefault();
+      showError("Graphics context lost. Reload the page to continue.");
+    });
+
+    window.addEventListener("error", () => {
+      showError("Could not start the game. Try reloading the page.");
+    });
+    window.addEventListener("unhandledrejection", () => {
+      showError("Could not start the game. Try reloading the page.");
+    });
+
+    var Module = {
+      canvas,
+      print: (...args) => console.log(...args),
+      printErr: (...args) => console.error(...args),
+      setStatus,
+      totalDependencies: 0,
+      monitorRunDependencies(left) {
+        this.totalDependencies = Math.max(this.totalDependencies, left);
+        setStatus(left
+          ? `Preparing... (${this.totalDependencies - left}/${this.totalDependencies})`
+          : "");
+      },
+    };
+
+    fitCanvas();
+  </script>
+  {{{ SCRIPT }}}
+</body>
+</html>

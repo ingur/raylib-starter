@@ -263,10 +263,12 @@ fn web(
         "-sALLOW_MEMORY_GROWTH=1",
         "-lidbfs.js",
     });
+    link.addArg("--shell-file");
+    link.addFileArg(b.path("src/web_shell.html"));
     link.addArg("--pre-js");
     link.addFileArg(b.path("src/web_save.js"));
     link.addArgs(&.{ "--preload-file", "zig-out/web/" ++ assets_pak ++ "@/" ++ assets_pak });
-    link.addArgs(&.{ "-o", "zig-out/web/" ++ name ++ ".html" });
+    link.addArgs(&.{ "-o", "zig-out/web/index.html" });
     link.step.dependOn(&pak.step);
     b.step("web", "Build the web target").dependOn(&link.step);
 }

@@ -123,7 +123,7 @@ def update():
 * Use the `rl` loaders for packed assets
 * Some raylib functions take C pointers, shown as `intptr` in the stubs
 * The built-in `stdc` module bridges them with `addressof`, `malloc`, and typed boxes like `Float`
-* Test web builds locally with `emrun zig-out/web/game.html`
+* Test web builds locally with `emrun zig-out/web/index.html`
 
 ## Credits
 

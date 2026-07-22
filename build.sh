@@ -45,7 +45,7 @@ windows() {
 
 web() {
     zig build web -Dweb
-    echo "test locally: emrun zig-out/web/$(project_name).html"
+    echo "test locally: emrun zig-out/web/index.html"
 }
 
 dist() {
@@ -59,9 +59,8 @@ dist() {
     mkdir -p dist
     zip -j "dist/$name-linux.zip" "zig-out/bin/$name" zig-out/bin/*.pak
     zip -j "dist/$name-windows.zip" "zig-out/bin/$name.exe" zig-out/bin/*.pak
-    cp "zig-out/web/$name.html" zig-out/web/index.html
     zip -j "dist/$name-web.zip" zig-out/web/index.html \
-        "zig-out/web/$name.js" "zig-out/web/$name.wasm" "zig-out/web/$name.data"
+        zig-out/web/index.js zig-out/web/index.wasm zig-out/web/index.data
     echo "dist/ ready: $name-linux.zip  $name-windows.zip  $name-web.zip"
 }
 
