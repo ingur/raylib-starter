@@ -19,6 +19,9 @@ const pk_defines = [_][2][]const u8{
 // pocketpy relies on implementation defined pointer casts
 const cflags = [_][]const u8{ "-std=gnu11", "-fno-sanitize=undefined" };
 
+// miniz's source tarball has no amalgamation, compile the same list as upstream
+const miniz_srcs = [_][]const u8{ "miniz.c", "miniz_zip.c", "miniz_tinfl.c", "miniz_tdef.c" };
+
 pub fn build(b: *std.Build) !void {
     // `zig build web -Dweb` skips the native graph and its system libraries
     const web_only = b.option(bool, "web", "configure the web target only") orelse false;
@@ -71,7 +74,7 @@ pub fn build(b: *std.Build) !void {
 
     // clangd reads the generated compile_flags.txt
     const editor_flags = b.addUpdateSourceFiles();
-    editor_flags.addBytesToSource(b.fmt("-I{s}\n-I{s}\n-I{s}\n-DASSETS_PAK=\"{s}\"\n", .{
+    editor_flags.addBytesToSource(b.fmt("-Isrc\n-I{s}\n-I{s}\n-I{s}\n-DASSETS_PAK=\"{s}\"\n", .{
         raylib_dep.builder.pathFromRoot("src"),
         pocketpy_dep.builder.pathFromRoot("include"),
         miniz_dep.builder.pathFromRoot("."),
@@ -96,30 +99,47 @@ fn native(b: *std.Build, opts: NativeOptions) !void {
     const is_linux = opts.target.result.os.tag == .linux;
     const is_windows = opts.target.result.os.tag == .windows;
 
-    // zig resolves system libs to paths and packs them into static archives,
-    // so raylib's are queried through pkg-config here and linked on the exe
-    var sys_libs: std.array_list.Managed([]const u8) = .init(b.allocator);
+    // zig 0.16 otherwise packs the resolved .so files of system libraries into
+    // the static raylib archive (https://github.com/ziglang/zig/issues/20476),
+    // so they are stripped here and relinked on the executable instead
+    var sys_libs: std.array_list.Managed(std.Build.Module.SystemLib) = .init(b.allocator);
     var lib_dirs: std.array_list.Managed([]const u8) = .init(b.allocator);
     if (is_linux) {
+        const pkg_config = b.graph.environ_map.get("PKG_CONFIG") orelse "pkg-config";
+        // versioned glibc targets skip host system dirs, make pkg-config emit them
         const out = b.run(&.{
-            "pkg-config",     "--cflags",       "--libs-only-L",
-            "x11",            "xext",           "xrandr",
-            "xinerama",       "xcursor",        "xi",
-            "xrender",        "xfixes",         "gl",
-            "wayland-client", "wayland-cursor", "wayland-egl",
+            "env",
+            "PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1",
+            "PKG_CONFIG_ALLOW_SYSTEM_LIBS=1",
+            pkg_config,
+            "--cflags",
+            "--libs-only-L",
+            "x11",
+            "xext",
+            "xrandr",
+            "xinerama",
+            "xcursor",
+            "xi",
+            "xrender",
+            "xfixes",
+            "gl",
+            "wayland-client",
+            "wayland-cursor",
+            "wayland-egl",
             "xkbcommon",
         });
         var it = std.mem.tokenizeAny(u8, out, " \n\r\t");
         while (it.next()) |tok| {
             if (std.mem.startsWith(u8, tok, "-I")) {
-                raylib.root_module.addIncludePath(.{ .cwd_relative = b.dupe(tok[2..]) });
+                // -idirafter keeps zig's bundled libc headers ahead of the host's
+                raylib.root_module.addAfterIncludePath(.{ .cwd_relative = b.dupe(tok[2..]) });
             } else if (std.mem.startsWith(u8, tok, "-L")) {
                 try lib_dirs.append(b.dupe(tok[2..]));
             }
         }
         var kept: std.array_list.Managed(std.Build.Module.LinkObject) = .init(b.allocator);
         for (raylib.root_module.link_objects.items) |lo| switch (lo) {
-            .system_lib => |sl| try sys_libs.append(sl.name),
+            .system_lib => |sl| try sys_libs.append(sl),
             else => try kept.append(lo),
         };
         raylib.root_module.link_objects.clearRetainingCapacity();
@@ -133,7 +153,6 @@ fn native(b: *std.Build, opts: NativeOptions) !void {
     });
     pk_mod.addIncludePath(opts.pocketpy_dep.path("include"));
     for (pk_defines) |d| pk_mod.addCMacro(d[0], d[1]);
-    if (opts.ndebug) pk_mod.addCMacro("NDEBUG", "");
     pk_mod.addCSourceFiles(.{
         .root = opts.pocketpy_dep.path(""),
         .files = opts.pk_srcs,
@@ -158,16 +177,22 @@ fn native(b: *std.Build, opts: NativeOptions) !void {
         .strip = opts.ndebug,
     });
     exe_mod.addCSourceFiles(.{ .files = opts.game_srcs, .flags = &cflags });
-    exe_mod.addCSourceFile(.{ .file = opts.miniz_dep.path("miniz.c"), .flags = &cflags });
+    exe_mod.addCSourceFiles(.{ .root = opts.miniz_dep.path(""), .files = &miniz_srcs, .flags = &cflags });
     exe_mod.addIncludePath(opts.miniz_dep.path(""));
+    exe_mod.addIncludePath(b.path("src"));
     exe_mod.addIncludePath(opts.pocketpy_dep.path("include"));
     exe_mod.addIncludePath(opts.raylib_dep.path("src"));
     exe_mod.addCMacro("ASSETS_PAK", "\"" ++ assets_pak ++ "\"");
-    if (opts.ndebug) exe_mod.addCMacro("NDEBUG", "");
     exe_mod.linkLibrary(raylib);
     exe_mod.linkLibrary(pocketpy);
     for (lib_dirs.items) |d| exe_mod.addLibraryPath(.{ .cwd_relative = d });
-    for (sys_libs.items) |l| exe_mod.linkSystemLibrary(l, .{ .use_pkg_config = .no });
+    for (sys_libs.items) |sl| exe_mod.linkSystemLibrary(sl.name, .{
+        .needed = sl.needed,
+        .weak = sl.weak,
+        .use_pkg_config = .no,
+        .preferred_link_mode = sl.preferred_link_mode,
+        .search_strategy = sl.search_strategy,
+    });
 
     const exe = b.addExecutable(.{ .name = name, .root_module = exe_mod });
     if (is_linux) {
@@ -202,7 +227,7 @@ fn web(
         "src/rtext.c", "src/rmodels.c", "src/raudio.c",
     }) |f| try srcs.append(raylib_dep.path(f));
     for (pk_srcs) |f| try srcs.append(pocketpy_dep.path(f));
-    try srcs.append(miniz_dep.path("miniz.c"));
+    for (miniz_srcs) |f| try srcs.append(miniz_dep.path(f));
     for (game_srcs) |f| try srcs.append(b.path(f));
 
     const link = b.addSystemCommand(&.{ "emcc", "-Os" });
@@ -223,6 +248,7 @@ fn web(
         cc.addPrefixedDirectoryArg("-I", raylib_dep.path("src"));
         cc.addPrefixedDirectoryArg("-I", pocketpy_dep.path("include"));
         cc.addPrefixedDirectoryArg("-I", miniz_dep.path(""));
+        cc.addPrefixedDirectoryArg("-I", b.path("src"));
         cc.addFileArg(src);
         cc.addArgs(&.{ "-MD", "-MF" });
         _ = cc.addDepFileOutputArg(b.fmt("{s}.d", .{obj}));

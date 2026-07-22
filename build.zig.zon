@@ -16,8 +16,8 @@
             .hash = "N-V-__8AAFWqhwAHudC5XxJRvk7sR8kx6W3vel0VV0YNAK_a",
         },
         .miniz = .{
-            .url = "https://github.com/richgel999/miniz/releases/download/3.1.2/miniz-3.1.2.zip",
-            .hash = "N-V-__8AACZ9BwBtpix1JS569yNZcDzDf9abe3Zimx8glq9u",
+            .url = "https://github.com/richgel999/miniz/archive/refs/tags/3.1.2.tar.gz",
+            .hash = "N-V-__8AAJmKFgANnVgLMCG4IKGFiSk_OceSUlZrQfI_Lo-r",
         },
     },
 
