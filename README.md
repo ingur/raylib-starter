@@ -24,10 +24,13 @@
 
 ## Requirements
 * `git`, `zip`, and [`zig`](https://ziglang.org/download/) 0.16
-* `pkg-config`, OpenGL, X11 and Wayland development libraries (see [wiki](https://github.com/ingur/raylib-starter/wiki/System-dependencies))
+* `pkg-config`, OpenGL, X11 and Wayland development libraries
 * Optional: `emscripten` for the web target
-* Optional: `python3` with `pycparser` and `pcpp`, only needed for `./build.sh bindgen`
+* Optional: `curl` and `python3` with `pycparser` and `pcpp`, only needed for `./build.sh bindgen`
 * Develop on Linux, or on Windows via WSL2
+
+> [!TIP]
+> See the [wiki](https://github.com/ingur/raylib-starter/wiki/System-dependencies) for quick installation commands
 
 ## Getting Started
 
