@@ -1,4 +1,0 @@
-CompileFlags:
-  # Index against the native build's compile_commands.json (created by the
-  # `linux` preset). Configure that preset once and clangd lights up.
-  CompilationDatabase: build/linux

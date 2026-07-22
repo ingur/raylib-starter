@@ -1,7 +1,10 @@
 # Build output
-/build/
+/.zig-cache/
+/zig-out/
+/zig-pkg/
 /dist/
 /.cache/
+/compile_flags.txt
 
 # Save files
 /save/

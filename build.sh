@@ -1,29 +1,23 @@
 #!/usr/bin/env bash
-# Build helper, a thin wrapper over the CMake presets.
+# Build helper, a thin wrapper over zig build.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
 # --- Utility Functions ---
 
-CONFIG=Release
+CONFIG=ReleaseFast
+TARGET=x86_64-linux-gnu.2.17  # portable baseline for linux releases
 
 set_config() {
     case "${1:-release}" in
         debug)   CONFIG=Debug ;;
-        release) CONFIG=Release ;;
+        release) CONFIG=ReleaseFast ;;
         *)       echo "Unknown config: $1"; exit 1 ;;
     esac
 }
 
-# configure once per target, after that ninja reconfigures itself when needed
-target() {
-    local preset=$1 config=$2
-    [ -f "build/$preset/build.ninja" ] || cmake --preset "$preset"
-    cmake --build "build/$preset" --config "$config" ${3:+--target "$3"}
-}
-
 project_name() {
-    sed -n 's/^project(\([A-Za-z0-9_-]*\).*/\1/p' CMakeLists.txt
+    sed -n 's/^const name = "\([A-Za-z0-9_-]*\)".*/\1/p' build.zig
 }
 
 # --- Commands ---
@@ -31,56 +25,52 @@ project_name() {
 run() {
     set_config "${1:-debug}"
     unset WATCH  # run never watches, dev does
-    target linux "$CONFIG" run
+    zig build run -Doptimize=$CONFIG -Dtarget=$TARGET
 }
 
 dev() {
     export WATCH=1  # hot reload, see WatchFiles in src/main.c
-    target linux Debug run
+    zig build run -Doptimize=Debug -Dtarget=$TARGET
 }
 
 linux() {
     set_config "${1:-}"
-    target linux "$CONFIG"
+    zig build -Doptimize=$CONFIG -Dtarget=$TARGET
 }
 
 windows() {
     set_config "${1:-}"
-    target windows "$CONFIG"
+    zig build -Doptimize=$CONFIG -Dtarget=x86_64-windows-gnu
 }
 
 web() {
-    # emsdk installs set EMSDK, the web preset expects EMSCRIPTEN
-    if [ -z "${EMSCRIPTEN:-}" ] && [ -n "${EMSDK:-}" ]; then
-        export EMSCRIPTEN="$EMSDK/upstream/emscripten"
-    fi
-    set_config "${1:-}"
-    target web "$CONFIG"
-    echo "test locally: emrun build/web/$CONFIG/$(project_name).html"
+    zig build web -Dweb
+    echo "test locally: emrun zig-out/web/$(project_name).html"
 }
 
 dist() {
+    rm -rf dist
+
     linux
     windows
     web
 
     local name="$(project_name)"
-    rm -rf dist && mkdir -p dist
-    zip -j "dist/$name-linux.zip" "build/linux/Release/$name" build/linux/Release/*.pak
-    zip -j "dist/$name-windows.zip" "build/windows/Release/$name.exe" build/windows/Release/*.pak
-    cp "build/web/Release/$name.html" build/web/Release/index.html
-    zip -j "dist/$name-web.zip" build/web/Release/index.html \
-        "build/web/Release/$name.js" "build/web/Release/$name.wasm" "build/web/Release/$name.data"
+    mkdir -p dist
+    zip -j "dist/$name-linux.zip" "zig-out/bin/$name" zig-out/bin/*.pak
+    zip -j "dist/$name-windows.zip" "zig-out/bin/$name.exe" zig-out/bin/*.pak
+    cp "zig-out/web/$name.html" zig-out/web/index.html
+    zip -j "dist/$name-web.zip" zig-out/web/index.html \
+        "zig-out/web/$name.js" "zig-out/web/$name.wasm" "zig-out/web/$name.data"
     echo "dist/ ready: $name-linux.zip  $name-windows.zip  $name-web.zip"
 }
 
 bindgen() {
-    [ -f build/linux/build.ninja ] || cmake --preset linux
-    python3 tools/bindgen.py build/linux/_deps/raylib-src build/linux/_deps/pocketpy-src
+    zig build bindgen
 }
 
 clean() {
-    rm -rf build dist
+    rm -rf zig-out .zig-cache dist
 }
 
 # --- Command Handling ---
@@ -92,7 +82,7 @@ show_help() {
     echo "  dev       Build and run the game with hot reload"
     echo "  linux     Build the linux target [debug|release]"
     echo "  windows   Build the windows target [debug|release]"
-    echo "  web       Build the web target [debug|release]"
+    echo "  web       Build the web target"
     echo "  dist      Package release zips for all platforms into dist/"
     echo "  bindgen   Regenerate the python bindings and type stubs"
     echo "  clean     Clean build environment"
@@ -102,10 +92,10 @@ show_help() {
 }
 
 case "${1:-help}" in
-    run|linux|windows|web)
+    run|linux|windows)
         [ "$#" -le 2 ] || { echo "$1 takes at most one option"; exit 1; }
         "$1" "${2:-}" ;;
-    dev|dist|bindgen|clean)
+    dev|web|dist|bindgen|clean)
         [ "$#" -le 1 ] || { echo "$1 takes no options"; exit 1; }
         "$1" ;;
     help|--help|-h) show_help ;;
