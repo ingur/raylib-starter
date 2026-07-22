@@ -23,12 +23,11 @@
 > The previous LuaJIT (and C/C++) version lives on the [`luajit`](https://github.com/ingur/raylib-starter/tree/luajit) branch.
 
 ## Requirements
-* `git`, [`zig`](https://ziglang.org/download/) 0.16, and `zip`
-* Linux: `pkg-config`, OpenGL, X11 and Wayland development libraries (see `devenv.nix`)
-* `emscripten` for the web target
-* Optional: `curl` and `python3` with `pycparser` and `pcpp`, only needed for `./build.sh bindgen`
+* `git`, `zip`, and [`zig`](https://ziglang.org/download/) 0.16
+* `pkg-config`, OpenGL, X11 and Wayland development libraries
+* Optional: `emscripten` for the web target
+* Optional: `python3` with `pycparser` and `pcpp`, only needed for `./build.sh bindgen`
 * Develop on Linux, or on Windows via WSL2
-* Optional: [devenv](https://devenv.sh) provisions all of the above in one shell
 
 ## Getting Started
 
@@ -65,8 +64,6 @@ Build targets default to release, run defaults to debug.
 
 > [!NOTE]
 > The first build downloads and compiles raylib and pocketpy from source. Later builds are incremental. Binaries land in `zig-out/`.
-
-Using [devenv](https://devenv.sh)? `devenv shell` (or `direnv allow` once) provides the whole toolchain. The same script then just works.
 
 ## Example Code
 ```python
