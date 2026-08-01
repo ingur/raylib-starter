@@ -91,7 +91,7 @@ end
 declare extern type RenderTexture with
     --- OpenGL framebuffer object id
     read id: number
-    --- Color buffer attachment texture
+    --- Color buffer attachment texture. Borrowed, do not unload it separately
     read texture: Texture
 end
 

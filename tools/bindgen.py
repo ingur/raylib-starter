@@ -438,7 +438,10 @@ def emit_defs(api: Api, bound: list[tuple[dict, str]], version: str) -> str:
         out.append(doc("", describe(api.structs[name].get("description"))))
         out.append(f"declare extern type {name} with\n")
         for field, ltype in struct_fields(api, name):
-            out.append(doc("    ", field_doc(api, name, field)))
+            text = field_doc(api, name, field)
+            if (name, field) in BORROWED_FIELDS:
+                text = f"{text}. Borrowed, do not unload it separately".lstrip(". ")
+            out.append(doc("    ", text))
             access = "" if writable(api, name, field) else "read "
             out.append(f"    {access}{field}: {ltype}\n")
         out.append("end\n\n")
