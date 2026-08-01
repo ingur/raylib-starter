@@ -900,12 +900,6 @@ declare raylib: {
     ImageAlphaPremultiply: (image: Image) -> (),
     --- Apply Gaussian blur using a box blur approximation
     ImageBlurGaussian: (image: Image, blurSize: number) -> (),
-    --- Resize image (Bicubic scaling algorithm)
-    ImageResize: (image: Image, newWidth: number, newHeight: number) -> (),
-    --- Resize image (Nearest-Neighbor scaling algorithm)
-    ImageResizeNN: (image: Image, newWidth: number, newHeight: number) -> (),
-    --- Resize canvas and fill with color
-    ImageResizeCanvas: (image: Image, newWidth: number, newHeight: number, offsetX: number, offsetY: number, fill: number) -> (),
     --- Compute all mipmap levels for a provided image
     ImageMipmaps: (image: Image) -> (),
     --- Dither image data to 16bpp or lower (Floyd-Steinberg dithering)
@@ -1262,8 +1256,6 @@ declare raylib: {
     WaveCopy: (wave: Wave) -> Wave,
     --- Crop a wave to defined frames range
     WaveCrop: (wave: Wave, initFrame: number, finalFrame: number) -> (),
-    --- Convert wave data to desired format
-    WaveFormat: (wave: Wave, sampleRate: number, sampleSize: number, channels: number) -> (),
     --- Checks if a music stream is valid (context and buffers initialized)
     IsMusicValid: (music: Music) -> boolean,
     --- Start music playing

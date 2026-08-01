@@ -45,6 +45,15 @@ HAND_CLASSIFIED = {
     # rt.texture, whose getter is needed to draw a render target, nothing in a
     # script needs this one, SetShapesTexture is the half that is useful
     "GetShapesTexture": "borrows raylib's internal texture, unloading it breaks the renderer",
+    # rtextures.c sizes the new buffer from the requested dimensions with no check,
+    # so the int multiply overflows before the copy loops run. ImageResizeNN also
+    # divides by newWidth. The rest of the Image family clamps, these three do not.
+    "ImageResize": "unvalidated target size overflows the allocation",
+    "ImageResizeNN": "unvalidated target size overflows the allocation",
+    "ImageResizeCanvas": "unvalidated target size overflows the allocation",
+    # raudio.c allocates frameCount*channels*(sampleSize/8) but any sampleSize that
+    # is not 8 or 16 converts as f32, so 24 allocates 3 bytes per sample for 4
+    "WaveFormat": "sampleSize disagrees with the conversion format and undersizes the buffer",
 }
 
 # The only handle-typed field a script can read. Drawing a render target needs
@@ -70,9 +79,9 @@ IN_PLACE_MUTATORS = {
     "ImageDrawLineEx", "ImageDrawLineV", "ImageDrawPixel", "ImageDrawPixelV", "ImageDrawRectangle",
     "ImageDrawRectangleLines", "ImageDrawRectangleRec", "ImageDrawRectangleV", "ImageDrawText",
     "ImageDrawTextEx", "ImageDrawTriangle", "ImageDrawTriangleEx", "ImageDrawTriangleLines",
-    "ImageFlipHorizontal", "ImageFlipVertical", "ImageFormat", "ImageMipmaps", "ImageResize",
-    "ImageResizeCanvas", "ImageResizeNN", "ImageRotate", "ImageRotateCCW", "ImageRotateCW",
-    "ImageToPOT", "UpdateCamera", "UpdateCameraPro", "UploadMesh", "WaveCrop", "WaveFormat",
+    "ImageFlipHorizontal", "ImageFlipVertical", "ImageFormat", "ImageMipmaps", "ImageRotate",
+    "ImageRotateCCW", "ImageRotateCW", "ImageToPOT", "UpdateCamera", "UpdateCameraPro",
+    "UploadMesh", "WaveCrop",
 }
 
 # mapped onto native Luau values in src/rl_types.hpp

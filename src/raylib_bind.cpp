@@ -557,9 +557,6 @@ const FnDef kFunctions[] = {
     {"ImageAlphaMask", BIND_FN(ImageAlphaMask)},
     {"ImageAlphaPremultiply", BIND_FN(ImageAlphaPremultiply)},
     {"ImageBlurGaussian", BIND_FN(ImageBlurGaussian)},
-    {"ImageResize", BIND_FN(ImageResize)},
-    {"ImageResizeNN", BIND_FN(ImageResizeNN)},
-    {"ImageResizeCanvas", BIND_FN(ImageResizeCanvas)},
     {"ImageMipmaps", BIND_FN(ImageMipmaps)},
     {"ImageDither", BIND_FN(ImageDither)},
     {"ImageFlipVertical", BIND_FN(ImageFlipVertical)},
@@ -738,7 +735,6 @@ const FnDef kFunctions[] = {
     {"SetSoundPan", BIND_FN(SetSoundPan)},
     {"WaveCopy", BIND_FN(WaveCopy)},
     {"WaveCrop", BIND_FN(WaveCrop)},
-    {"WaveFormat", BIND_FN(WaveFormat)},
     {"IsMusicValid", BIND_FN(IsMusicValid)},
     {"PlayMusicStream", BIND_FN(PlayMusicStream)},
     {"IsMusicStreamPlaying", BIND_FN(IsMusicStreamPlaying)},
@@ -1138,7 +1134,7 @@ void OpenRaylib(lua_State *L) {
     for (const TypeInfo *type : kTypes)
         bind::RegisterType(L, *type);
 
-    lua_createtable(L, 0, 856);
+    lua_createtable(L, 0, 852);
     for (const FnDef &def : kFunctions) {
         lua_pushcfunction(L, def.fn, def.name);
         lua_rawsetfield(L, -2, def.name);
@@ -1154,7 +1150,7 @@ void OpenRaylib(lua_State *L) {
     lua_setglobal(L, "raylib");
 }
 
-// Not bound: 112 of 600 raylib functions.
+// Not bound: 116 of 600 raylib functions.
 // Each needs an adapter that owns the lifetime the C signature leaves implicit.
 //
 //   SetWindowIcons              Image * is not a reviewed in-place mutator
@@ -1201,6 +1197,9 @@ void OpenRaylib(lua_State *L) {
 //   LoadImageFromMemory         const unsigned char * array
 //   ExportImageToMemory         returns unsigned char *, ownership is not described by the api
 //   ImageKernelConvolution      Image * is not a reviewed in-place mutator
+//   ImageResize                 unvalidated target size overflows the allocation
+//   ImageResizeNN               unvalidated target size overflows the allocation
+//   ImageResizeCanvas           unvalidated target size overflows the allocation
 //   LoadImageColors             returns Color *, ownership is not described by the api
 //   LoadImagePalette            returns Color *, ownership is not described by the api
 //   UnloadImageColors           Color * out parameter
@@ -1260,6 +1259,7 @@ void OpenRaylib(lua_State *L) {
 //   LoadSoundAlias              returns a handle borrowing another handle's allocation
 //   UpdateSound                 raw const void * buffer parameter
 //   UnloadSoundAlias            consumes a handle borrowing another handle's allocation
+//   WaveFormat                  sampleSize disagrees with the conversion format and undersizes the buffer
 //   LoadWaveSamples             returns float *, ownership is not described by the api
 //   UnloadWaveSamples           float * out parameter
 //   LoadMusicStreamFromMemory   const unsigned char * array
