@@ -65,7 +65,7 @@ int Traceback(lua_State *L) {
     return 1;
 }
 
-// host replacement for Luau's require: resolves game/<name>.lua through the
+// host replacement for Luau's require: resolves game/<name>.luau through the
 // vfs, runs it once and caches whatever it returned
 int HostRequire(lua_State *L) {
     const char *name = luaL_checkstring(L, 1);
@@ -79,7 +79,7 @@ int HostRequire(lua_State *L) {
     lua_pop(L, 1);
 
     std::string path(name);
-    path += ".lua";
+    path += ".luau";
     std::optional<std::string> source = vfs::ReadScript(path);
     if (!source) luaL_error(L, "module '%s' not found", name);
 
@@ -90,7 +90,18 @@ int HostRequire(lua_State *L) {
     lua_pushlightuserdata(L, &kLoading);
     lua_rawsetfield(L, 2, name);
 
-    lua_call(L, 0, 1);  // errors propagate to the enclosing pcall with the traceback intact
+    // the traceback handler has to run at the point of the error, before the
+    // stack unwinds, so the module gets its own rather than relying on the
+    // enclosing pcall to see frames that are already gone
+    lua_getfield(L, LUA_REGISTRYINDEX, kTraceback);
+    lua_insert(L, 3);  // 3: handler, 4: chunk
+    if (lua_pcall(L, 0, 1, 3) != LUA_OK) {
+        lua_pushnil(L);
+        lua_rawsetfield(L, 2, name);  // a module that raised is not a cycle, let it retry
+        lua_remove(L, 3);             // drop the handler, leaving the error on top
+        lua_error(L);
+    }
+    lua_remove(L, 3);
 
     if (lua_isnil(L, -1)) {
         lua_pushnil(L);
@@ -263,7 +274,7 @@ bool Script::Require(const char *name, bool *missing) {
     // probe first: a module that is simply absent is not an error for callers
     // like the window config, and require() itself can only raise
     std::string path(name);
-    path += ".lua";
+    path += ".luau";
     if (!vfs::ReadScript(path)) {
         if (missing != nullptr) *missing = true;
         std::snprintf(lastError, sizeof(lastError), "game/%s not found", path.c_str());

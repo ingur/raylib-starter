@@ -51,7 +51,7 @@ bool CfgFlag(lua_State *L, int table, const char *key, bool fallback) {
     return value;
 }
 
-// Boots the VM and pulls game/window.lua in through require, so the table read
+// Boots the VM and pulls game/window.luau in through require, so the table read
 // here is the very same one the game later gets from require("window").
 void LoadWindowConfig() {
     std::snprintf(config.title, sizeof(config.title), "game");
@@ -67,14 +67,14 @@ void LoadWindowConfig() {
 
     bool missing = false;
     if (!script.Require("window", &missing)) {
-        if (!missing) TraceLog(LOG_WARNING, "SCRIPT: game/window.lua failed, using defaults");
+        if (!missing) TraceLog(LOG_WARNING, "SCRIPT: game/window.luau failed, using defaults");
         return;
     }
 
     lua_State *L = script.State();
     if (!lua_istable(L, -1)) {
         lua_pop(L, 1);
-        TraceLog(LOG_WARNING, "SCRIPT: game/window.lua must return a table, using defaults");
+        TraceLog(LOG_WARNING, "SCRIPT: game/window.luau must return a table, using defaults");
         return;
     }
     int table = lua_gettop(L);
@@ -111,8 +111,8 @@ void LoadWindowConfig() {
 
 bool Boot() {
     bool missing = false;
-    if (!script.RunEntry("main.lua", &missing)) {
-        if (missing) TraceLog(LOG_ERROR, "SCRIPT: game/main.lua not found");
+    if (!script.RunEntry("main.luau", &missing)) {
+        if (missing) TraceLog(LOG_ERROR, "SCRIPT: game/main.luau not found");
         return false;
     }
     return true;
@@ -253,7 +253,7 @@ void WatchFiles() {
 
     std::uint64_t stamp = 0;
     unsigned int count = 0;
-    StampDir("game", ".lua", &stamp, &count);
+    StampDir("game", ".luau", &stamp, &count);
     StampDir("assets", nullptr, &stamp, &count);
 
     if (!initialized) {

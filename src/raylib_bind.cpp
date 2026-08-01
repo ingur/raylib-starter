@@ -976,343 +976,343 @@ struct NumDef {
 };
 
 const NumDef kConstants[] = {
-    {"FLAG_VSYNC_HINT", 64.0},  // ConfigFlags
-    {"FLAG_FULLSCREEN_MODE", 2.0},  // ConfigFlags
-    {"FLAG_WINDOW_RESIZABLE", 4.0},  // ConfigFlags
-    {"FLAG_WINDOW_UNDECORATED", 8.0},  // ConfigFlags
-    {"FLAG_WINDOW_HIDDEN", 128.0},  // ConfigFlags
-    {"FLAG_WINDOW_MINIMIZED", 512.0},  // ConfigFlags
-    {"FLAG_WINDOW_MAXIMIZED", 1024.0},  // ConfigFlags
-    {"FLAG_WINDOW_UNFOCUSED", 2048.0},  // ConfigFlags
-    {"FLAG_WINDOW_TOPMOST", 4096.0},  // ConfigFlags
-    {"FLAG_WINDOW_ALWAYS_RUN", 256.0},  // ConfigFlags
-    {"FLAG_WINDOW_TRANSPARENT", 16.0},  // ConfigFlags
-    {"FLAG_WINDOW_HIGHDPI", 8192.0},  // ConfigFlags
-    {"FLAG_WINDOW_MOUSE_PASSTHROUGH", 16384.0},  // ConfigFlags
-    {"FLAG_BORDERLESS_WINDOWED_MODE", 32768.0},  // ConfigFlags
-    {"FLAG_MSAA_4X_HINT", 32.0},  // ConfigFlags
-    {"FLAG_INTERLACED_HINT", 65536.0},  // ConfigFlags
-    {"LOG_ALL", 0.0},  // TraceLogLevel
-    {"LOG_TRACE", 1.0},  // TraceLogLevel
-    {"LOG_DEBUG", 2.0},  // TraceLogLevel
-    {"LOG_INFO", 3.0},  // TraceLogLevel
-    {"LOG_WARNING", 4.0},  // TraceLogLevel
-    {"LOG_ERROR", 5.0},  // TraceLogLevel
-    {"LOG_FATAL", 6.0},  // TraceLogLevel
-    {"LOG_NONE", 7.0},  // TraceLogLevel
-    {"KEY_NULL", 0.0},  // KeyboardKey
-    {"KEY_APOSTROPHE", 39.0},  // KeyboardKey
-    {"KEY_COMMA", 44.0},  // KeyboardKey
-    {"KEY_MINUS", 45.0},  // KeyboardKey
-    {"KEY_PERIOD", 46.0},  // KeyboardKey
-    {"KEY_SLASH", 47.0},  // KeyboardKey
-    {"KEY_ZERO", 48.0},  // KeyboardKey
-    {"KEY_ONE", 49.0},  // KeyboardKey
-    {"KEY_TWO", 50.0},  // KeyboardKey
-    {"KEY_THREE", 51.0},  // KeyboardKey
-    {"KEY_FOUR", 52.0},  // KeyboardKey
-    {"KEY_FIVE", 53.0},  // KeyboardKey
-    {"KEY_SIX", 54.0},  // KeyboardKey
-    {"KEY_SEVEN", 55.0},  // KeyboardKey
-    {"KEY_EIGHT", 56.0},  // KeyboardKey
-    {"KEY_NINE", 57.0},  // KeyboardKey
-    {"KEY_SEMICOLON", 59.0},  // KeyboardKey
-    {"KEY_EQUAL", 61.0},  // KeyboardKey
-    {"KEY_A", 65.0},  // KeyboardKey
-    {"KEY_B", 66.0},  // KeyboardKey
-    {"KEY_C", 67.0},  // KeyboardKey
-    {"KEY_D", 68.0},  // KeyboardKey
-    {"KEY_E", 69.0},  // KeyboardKey
-    {"KEY_F", 70.0},  // KeyboardKey
-    {"KEY_G", 71.0},  // KeyboardKey
-    {"KEY_H", 72.0},  // KeyboardKey
-    {"KEY_I", 73.0},  // KeyboardKey
-    {"KEY_J", 74.0},  // KeyboardKey
-    {"KEY_K", 75.0},  // KeyboardKey
-    {"KEY_L", 76.0},  // KeyboardKey
-    {"KEY_M", 77.0},  // KeyboardKey
-    {"KEY_N", 78.0},  // KeyboardKey
-    {"KEY_O", 79.0},  // KeyboardKey
-    {"KEY_P", 80.0},  // KeyboardKey
-    {"KEY_Q", 81.0},  // KeyboardKey
-    {"KEY_R", 82.0},  // KeyboardKey
-    {"KEY_S", 83.0},  // KeyboardKey
-    {"KEY_T", 84.0},  // KeyboardKey
-    {"KEY_U", 85.0},  // KeyboardKey
-    {"KEY_V", 86.0},  // KeyboardKey
-    {"KEY_W", 87.0},  // KeyboardKey
-    {"KEY_X", 88.0},  // KeyboardKey
-    {"KEY_Y", 89.0},  // KeyboardKey
-    {"KEY_Z", 90.0},  // KeyboardKey
-    {"KEY_LEFT_BRACKET", 91.0},  // KeyboardKey
-    {"KEY_BACKSLASH", 92.0},  // KeyboardKey
-    {"KEY_RIGHT_BRACKET", 93.0},  // KeyboardKey
-    {"KEY_GRAVE", 96.0},  // KeyboardKey
-    {"KEY_SPACE", 32.0},  // KeyboardKey
-    {"KEY_ESCAPE", 256.0},  // KeyboardKey
-    {"KEY_ENTER", 257.0},  // KeyboardKey
-    {"KEY_TAB", 258.0},  // KeyboardKey
-    {"KEY_BACKSPACE", 259.0},  // KeyboardKey
-    {"KEY_INSERT", 260.0},  // KeyboardKey
-    {"KEY_DELETE", 261.0},  // KeyboardKey
-    {"KEY_RIGHT", 262.0},  // KeyboardKey
-    {"KEY_LEFT", 263.0},  // KeyboardKey
-    {"KEY_DOWN", 264.0},  // KeyboardKey
-    {"KEY_UP", 265.0},  // KeyboardKey
-    {"KEY_PAGE_UP", 266.0},  // KeyboardKey
-    {"KEY_PAGE_DOWN", 267.0},  // KeyboardKey
-    {"KEY_HOME", 268.0},  // KeyboardKey
-    {"KEY_END", 269.0},  // KeyboardKey
-    {"KEY_CAPS_LOCK", 280.0},  // KeyboardKey
-    {"KEY_SCROLL_LOCK", 281.0},  // KeyboardKey
-    {"KEY_NUM_LOCK", 282.0},  // KeyboardKey
-    {"KEY_PRINT_SCREEN", 283.0},  // KeyboardKey
-    {"KEY_PAUSE", 284.0},  // KeyboardKey
-    {"KEY_F1", 290.0},  // KeyboardKey
-    {"KEY_F2", 291.0},  // KeyboardKey
-    {"KEY_F3", 292.0},  // KeyboardKey
-    {"KEY_F4", 293.0},  // KeyboardKey
-    {"KEY_F5", 294.0},  // KeyboardKey
-    {"KEY_F6", 295.0},  // KeyboardKey
-    {"KEY_F7", 296.0},  // KeyboardKey
-    {"KEY_F8", 297.0},  // KeyboardKey
-    {"KEY_F9", 298.0},  // KeyboardKey
-    {"KEY_F10", 299.0},  // KeyboardKey
-    {"KEY_F11", 300.0},  // KeyboardKey
-    {"KEY_F12", 301.0},  // KeyboardKey
-    {"KEY_LEFT_SHIFT", 340.0},  // KeyboardKey
-    {"KEY_LEFT_CONTROL", 341.0},  // KeyboardKey
-    {"KEY_LEFT_ALT", 342.0},  // KeyboardKey
-    {"KEY_LEFT_SUPER", 343.0},  // KeyboardKey
-    {"KEY_RIGHT_SHIFT", 344.0},  // KeyboardKey
-    {"KEY_RIGHT_CONTROL", 345.0},  // KeyboardKey
-    {"KEY_RIGHT_ALT", 346.0},  // KeyboardKey
-    {"KEY_RIGHT_SUPER", 347.0},  // KeyboardKey
-    {"KEY_KB_MENU", 348.0},  // KeyboardKey
-    {"KEY_KP_0", 320.0},  // KeyboardKey
-    {"KEY_KP_1", 321.0},  // KeyboardKey
-    {"KEY_KP_2", 322.0},  // KeyboardKey
-    {"KEY_KP_3", 323.0},  // KeyboardKey
-    {"KEY_KP_4", 324.0},  // KeyboardKey
-    {"KEY_KP_5", 325.0},  // KeyboardKey
-    {"KEY_KP_6", 326.0},  // KeyboardKey
-    {"KEY_KP_7", 327.0},  // KeyboardKey
-    {"KEY_KP_8", 328.0},  // KeyboardKey
-    {"KEY_KP_9", 329.0},  // KeyboardKey
-    {"KEY_KP_DECIMAL", 330.0},  // KeyboardKey
-    {"KEY_KP_DIVIDE", 331.0},  // KeyboardKey
-    {"KEY_KP_MULTIPLY", 332.0},  // KeyboardKey
-    {"KEY_KP_SUBTRACT", 333.0},  // KeyboardKey
-    {"KEY_KP_ADD", 334.0},  // KeyboardKey
-    {"KEY_KP_ENTER", 335.0},  // KeyboardKey
-    {"KEY_KP_EQUAL", 336.0},  // KeyboardKey
-    {"KEY_BACK", 4.0},  // KeyboardKey
-    {"KEY_MENU", 5.0},  // KeyboardKey
-    {"KEY_VOLUME_UP", 24.0},  // KeyboardKey
-    {"KEY_VOLUME_DOWN", 25.0},  // KeyboardKey
-    {"MOUSE_BUTTON_LEFT", 0.0},  // MouseButton
-    {"MOUSE_BUTTON_RIGHT", 1.0},  // MouseButton
-    {"MOUSE_BUTTON_MIDDLE", 2.0},  // MouseButton
-    {"MOUSE_BUTTON_SIDE", 3.0},  // MouseButton
-    {"MOUSE_BUTTON_EXTRA", 4.0},  // MouseButton
-    {"MOUSE_BUTTON_FORWARD", 5.0},  // MouseButton
-    {"MOUSE_BUTTON_BACK", 6.0},  // MouseButton
-    {"MOUSE_CURSOR_DEFAULT", 0.0},  // MouseCursor
-    {"MOUSE_CURSOR_ARROW", 1.0},  // MouseCursor
-    {"MOUSE_CURSOR_IBEAM", 2.0},  // MouseCursor
-    {"MOUSE_CURSOR_CROSSHAIR", 3.0},  // MouseCursor
-    {"MOUSE_CURSOR_POINTING_HAND", 4.0},  // MouseCursor
-    {"MOUSE_CURSOR_RESIZE_EW", 5.0},  // MouseCursor
-    {"MOUSE_CURSOR_RESIZE_NS", 6.0},  // MouseCursor
-    {"MOUSE_CURSOR_RESIZE_NWSE", 7.0},  // MouseCursor
-    {"MOUSE_CURSOR_RESIZE_NESW", 8.0},  // MouseCursor
-    {"MOUSE_CURSOR_RESIZE_ALL", 9.0},  // MouseCursor
-    {"MOUSE_CURSOR_NOT_ALLOWED", 10.0},  // MouseCursor
-    {"GAMEPAD_BUTTON_UNKNOWN", 0.0},  // GamepadButton
-    {"GAMEPAD_BUTTON_LEFT_FACE_UP", 1.0},  // GamepadButton
-    {"GAMEPAD_BUTTON_LEFT_FACE_RIGHT", 2.0},  // GamepadButton
-    {"GAMEPAD_BUTTON_LEFT_FACE_DOWN", 3.0},  // GamepadButton
-    {"GAMEPAD_BUTTON_LEFT_FACE_LEFT", 4.0},  // GamepadButton
-    {"GAMEPAD_BUTTON_RIGHT_FACE_UP", 5.0},  // GamepadButton
-    {"GAMEPAD_BUTTON_RIGHT_FACE_RIGHT", 6.0},  // GamepadButton
-    {"GAMEPAD_BUTTON_RIGHT_FACE_DOWN", 7.0},  // GamepadButton
-    {"GAMEPAD_BUTTON_RIGHT_FACE_LEFT", 8.0},  // GamepadButton
-    {"GAMEPAD_BUTTON_LEFT_TRIGGER_1", 9.0},  // GamepadButton
-    {"GAMEPAD_BUTTON_LEFT_TRIGGER_2", 10.0},  // GamepadButton
-    {"GAMEPAD_BUTTON_RIGHT_TRIGGER_1", 11.0},  // GamepadButton
-    {"GAMEPAD_BUTTON_RIGHT_TRIGGER_2", 12.0},  // GamepadButton
-    {"GAMEPAD_BUTTON_MIDDLE_LEFT", 13.0},  // GamepadButton
-    {"GAMEPAD_BUTTON_MIDDLE", 14.0},  // GamepadButton
-    {"GAMEPAD_BUTTON_MIDDLE_RIGHT", 15.0},  // GamepadButton
-    {"GAMEPAD_BUTTON_LEFT_THUMB", 16.0},  // GamepadButton
-    {"GAMEPAD_BUTTON_RIGHT_THUMB", 17.0},  // GamepadButton
-    {"GAMEPAD_AXIS_LEFT_X", 0.0},  // GamepadAxis
-    {"GAMEPAD_AXIS_LEFT_Y", 1.0},  // GamepadAxis
-    {"GAMEPAD_AXIS_RIGHT_X", 2.0},  // GamepadAxis
-    {"GAMEPAD_AXIS_RIGHT_Y", 3.0},  // GamepadAxis
-    {"GAMEPAD_AXIS_LEFT_TRIGGER", 4.0},  // GamepadAxis
-    {"GAMEPAD_AXIS_RIGHT_TRIGGER", 5.0},  // GamepadAxis
-    {"MATERIAL_MAP_ALBEDO", 0.0},  // MaterialMapIndex
-    {"MATERIAL_MAP_METALNESS", 1.0},  // MaterialMapIndex
-    {"MATERIAL_MAP_NORMAL", 2.0},  // MaterialMapIndex
-    {"MATERIAL_MAP_ROUGHNESS", 3.0},  // MaterialMapIndex
-    {"MATERIAL_MAP_OCCLUSION", 4.0},  // MaterialMapIndex
-    {"MATERIAL_MAP_EMISSION", 5.0},  // MaterialMapIndex
-    {"MATERIAL_MAP_HEIGHT", 6.0},  // MaterialMapIndex
-    {"MATERIAL_MAP_CUBEMAP", 7.0},  // MaterialMapIndex
-    {"MATERIAL_MAP_IRRADIANCE", 8.0},  // MaterialMapIndex
-    {"MATERIAL_MAP_PREFILTER", 9.0},  // MaterialMapIndex
-    {"MATERIAL_MAP_BRDF", 10.0},  // MaterialMapIndex
-    {"SHADER_LOC_VERTEX_POSITION", 0.0},  // ShaderLocationIndex
-    {"SHADER_LOC_VERTEX_TEXCOORD01", 1.0},  // ShaderLocationIndex
-    {"SHADER_LOC_VERTEX_TEXCOORD02", 2.0},  // ShaderLocationIndex
-    {"SHADER_LOC_VERTEX_NORMAL", 3.0},  // ShaderLocationIndex
-    {"SHADER_LOC_VERTEX_TANGENT", 4.0},  // ShaderLocationIndex
-    {"SHADER_LOC_VERTEX_COLOR", 5.0},  // ShaderLocationIndex
-    {"SHADER_LOC_MATRIX_MVP", 6.0},  // ShaderLocationIndex
-    {"SHADER_LOC_MATRIX_VIEW", 7.0},  // ShaderLocationIndex
-    {"SHADER_LOC_MATRIX_PROJECTION", 8.0},  // ShaderLocationIndex
-    {"SHADER_LOC_MATRIX_MODEL", 9.0},  // ShaderLocationIndex
-    {"SHADER_LOC_MATRIX_NORMAL", 10.0},  // ShaderLocationIndex
-    {"SHADER_LOC_VECTOR_VIEW", 11.0},  // ShaderLocationIndex
-    {"SHADER_LOC_COLOR_DIFFUSE", 12.0},  // ShaderLocationIndex
-    {"SHADER_LOC_COLOR_SPECULAR", 13.0},  // ShaderLocationIndex
-    {"SHADER_LOC_COLOR_AMBIENT", 14.0},  // ShaderLocationIndex
-    {"SHADER_LOC_MAP_ALBEDO", 15.0},  // ShaderLocationIndex
-    {"SHADER_LOC_MAP_METALNESS", 16.0},  // ShaderLocationIndex
-    {"SHADER_LOC_MAP_NORMAL", 17.0},  // ShaderLocationIndex
-    {"SHADER_LOC_MAP_ROUGHNESS", 18.0},  // ShaderLocationIndex
-    {"SHADER_LOC_MAP_OCCLUSION", 19.0},  // ShaderLocationIndex
-    {"SHADER_LOC_MAP_EMISSION", 20.0},  // ShaderLocationIndex
-    {"SHADER_LOC_MAP_HEIGHT", 21.0},  // ShaderLocationIndex
-    {"SHADER_LOC_MAP_CUBEMAP", 22.0},  // ShaderLocationIndex
-    {"SHADER_LOC_MAP_IRRADIANCE", 23.0},  // ShaderLocationIndex
-    {"SHADER_LOC_MAP_PREFILTER", 24.0},  // ShaderLocationIndex
-    {"SHADER_LOC_MAP_BRDF", 25.0},  // ShaderLocationIndex
-    {"SHADER_LOC_VERTEX_BONEIDS", 26.0},  // ShaderLocationIndex
-    {"SHADER_LOC_VERTEX_BONEWEIGHTS", 27.0},  // ShaderLocationIndex
-    {"SHADER_LOC_MATRIX_BONETRANSFORMS", 28.0},  // ShaderLocationIndex
-    {"SHADER_LOC_VERTEX_INSTANCETRANSFORM", 29.0},  // ShaderLocationIndex
-    {"SHADER_UNIFORM_FLOAT", 0.0},  // ShaderUniformDataType
-    {"SHADER_UNIFORM_VEC2", 1.0},  // ShaderUniformDataType
-    {"SHADER_UNIFORM_VEC3", 2.0},  // ShaderUniformDataType
-    {"SHADER_UNIFORM_VEC4", 3.0},  // ShaderUniformDataType
-    {"SHADER_UNIFORM_INT", 4.0},  // ShaderUniformDataType
-    {"SHADER_UNIFORM_IVEC2", 5.0},  // ShaderUniformDataType
-    {"SHADER_UNIFORM_IVEC3", 6.0},  // ShaderUniformDataType
-    {"SHADER_UNIFORM_IVEC4", 7.0},  // ShaderUniformDataType
-    {"SHADER_UNIFORM_UINT", 8.0},  // ShaderUniformDataType
-    {"SHADER_UNIFORM_UIVEC2", 9.0},  // ShaderUniformDataType
-    {"SHADER_UNIFORM_UIVEC3", 10.0},  // ShaderUniformDataType
-    {"SHADER_UNIFORM_UIVEC4", 11.0},  // ShaderUniformDataType
-    {"SHADER_UNIFORM_SAMPLER2D", 12.0},  // ShaderUniformDataType
-    {"SHADER_ATTRIB_FLOAT", 0.0},  // ShaderAttributeDataType
-    {"SHADER_ATTRIB_VEC2", 1.0},  // ShaderAttributeDataType
-    {"SHADER_ATTRIB_VEC3", 2.0},  // ShaderAttributeDataType
-    {"SHADER_ATTRIB_VEC4", 3.0},  // ShaderAttributeDataType
-    {"PIXELFORMAT_UNCOMPRESSED_GRAYSCALE", 1.0},  // PixelFormat
-    {"PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA", 2.0},  // PixelFormat
-    {"PIXELFORMAT_UNCOMPRESSED_R5G6B5", 3.0},  // PixelFormat
-    {"PIXELFORMAT_UNCOMPRESSED_R8G8B8", 4.0},  // PixelFormat
-    {"PIXELFORMAT_UNCOMPRESSED_R5G5B5A1", 5.0},  // PixelFormat
-    {"PIXELFORMAT_UNCOMPRESSED_R4G4B4A4", 6.0},  // PixelFormat
-    {"PIXELFORMAT_UNCOMPRESSED_R8G8B8A8", 7.0},  // PixelFormat
-    {"PIXELFORMAT_UNCOMPRESSED_R32", 8.0},  // PixelFormat
-    {"PIXELFORMAT_UNCOMPRESSED_R32G32B32", 9.0},  // PixelFormat
-    {"PIXELFORMAT_UNCOMPRESSED_R32G32B32A32", 10.0},  // PixelFormat
-    {"PIXELFORMAT_UNCOMPRESSED_R16", 11.0},  // PixelFormat
-    {"PIXELFORMAT_UNCOMPRESSED_R16G16B16", 12.0},  // PixelFormat
-    {"PIXELFORMAT_UNCOMPRESSED_R16G16B16A16", 13.0},  // PixelFormat
-    {"PIXELFORMAT_COMPRESSED_DXT1_RGB", 14.0},  // PixelFormat
-    {"PIXELFORMAT_COMPRESSED_DXT1_RGBA", 15.0},  // PixelFormat
-    {"PIXELFORMAT_COMPRESSED_DXT3_RGBA", 16.0},  // PixelFormat
-    {"PIXELFORMAT_COMPRESSED_DXT5_RGBA", 17.0},  // PixelFormat
-    {"PIXELFORMAT_COMPRESSED_ETC1_RGB", 18.0},  // PixelFormat
-    {"PIXELFORMAT_COMPRESSED_ETC2_RGB", 19.0},  // PixelFormat
-    {"PIXELFORMAT_COMPRESSED_ETC2_EAC_RGBA", 20.0},  // PixelFormat
-    {"PIXELFORMAT_COMPRESSED_PVRT_RGB", 21.0},  // PixelFormat
-    {"PIXELFORMAT_COMPRESSED_PVRT_RGBA", 22.0},  // PixelFormat
-    {"PIXELFORMAT_COMPRESSED_ASTC_4x4_RGBA", 23.0},  // PixelFormat
-    {"PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA", 24.0},  // PixelFormat
-    {"TEXTURE_FILTER_POINT", 0.0},  // TextureFilter
-    {"TEXTURE_FILTER_BILINEAR", 1.0},  // TextureFilter
-    {"TEXTURE_FILTER_TRILINEAR", 2.0},  // TextureFilter
-    {"TEXTURE_FILTER_ANISOTROPIC_4X", 3.0},  // TextureFilter
-    {"TEXTURE_FILTER_ANISOTROPIC_8X", 4.0},  // TextureFilter
-    {"TEXTURE_FILTER_ANISOTROPIC_16X", 5.0},  // TextureFilter
-    {"TEXTURE_WRAP_REPEAT", 0.0},  // TextureWrap
-    {"TEXTURE_WRAP_CLAMP", 1.0},  // TextureWrap
-    {"TEXTURE_WRAP_MIRROR_REPEAT", 2.0},  // TextureWrap
-    {"TEXTURE_WRAP_MIRROR_CLAMP", 3.0},  // TextureWrap
-    {"CUBEMAP_LAYOUT_AUTO_DETECT", 0.0},  // CubemapLayout
-    {"CUBEMAP_LAYOUT_LINE_VERTICAL", 1.0},  // CubemapLayout
-    {"CUBEMAP_LAYOUT_LINE_HORIZONTAL", 2.0},  // CubemapLayout
-    {"CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR", 3.0},  // CubemapLayout
-    {"CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE", 4.0},  // CubemapLayout
-    {"FONT_DEFAULT", 0.0},  // FontType
-    {"FONT_BITMAP", 1.0},  // FontType
-    {"FONT_SDF", 2.0},  // FontType
-    {"BLEND_ALPHA", 0.0},  // BlendMode
-    {"BLEND_ADDITIVE", 1.0},  // BlendMode
-    {"BLEND_MULTIPLIED", 2.0},  // BlendMode
-    {"BLEND_ADD_COLORS", 3.0},  // BlendMode
-    {"BLEND_SUBTRACT_COLORS", 4.0},  // BlendMode
-    {"BLEND_ALPHA_PREMULTIPLY", 5.0},  // BlendMode
-    {"BLEND_CUSTOM", 6.0},  // BlendMode
-    {"BLEND_CUSTOM_SEPARATE", 7.0},  // BlendMode
-    {"GESTURE_NONE", 0.0},  // Gesture
-    {"GESTURE_TAP", 1.0},  // Gesture
-    {"GESTURE_DOUBLETAP", 2.0},  // Gesture
-    {"GESTURE_HOLD", 4.0},  // Gesture
-    {"GESTURE_DRAG", 8.0},  // Gesture
-    {"GESTURE_SWIPE_RIGHT", 16.0},  // Gesture
-    {"GESTURE_SWIPE_LEFT", 32.0},  // Gesture
-    {"GESTURE_SWIPE_UP", 64.0},  // Gesture
-    {"GESTURE_SWIPE_DOWN", 128.0},  // Gesture
-    {"GESTURE_PINCH_IN", 256.0},  // Gesture
-    {"GESTURE_PINCH_OUT", 512.0},  // Gesture
-    {"CAMERA_CUSTOM", 0.0},  // CameraMode
-    {"CAMERA_FREE", 1.0},  // CameraMode
-    {"CAMERA_ORBITAL", 2.0},  // CameraMode
-    {"CAMERA_FIRST_PERSON", 3.0},  // CameraMode
-    {"CAMERA_THIRD_PERSON", 4.0},  // CameraMode
-    {"CAMERA_PERSPECTIVE", 0.0},  // CameraProjection
-    {"CAMERA_ORTHOGRAPHIC", 1.0},  // CameraProjection
-    {"NPATCH_NINE_PATCH", 0.0},  // NPatchLayout
-    {"NPATCH_THREE_PATCH_VERTICAL", 1.0},  // NPatchLayout
-    {"NPATCH_THREE_PATCH_HORIZONTAL", 2.0},  // NPatchLayout
-    {"RAYLIB_VERSION_MAJOR", 6.0},  // define
-    {"RAYLIB_VERSION_MINOR", 0.0},  // define
-    {"RAYLIB_VERSION_PATCH", 0.0},  // define
-    {"PI", 3.141592653589793},  // define
-    {"DEG2RAD", 0.017453292519943295},  // define
-    {"RAD2DEG", 57.29577951308232},  // define
-    {"LIGHTGRAY", 3368601855.0},  // Color
-    {"GRAY", 2189591295.0},  // Color
-    {"DARKGRAY", 1347440895.0},  // Color
-    {"YELLOW", 4260954367.0},  // Color
-    {"GOLD", 4291494143.0},  // Color
-    {"ORANGE", 4288741631.0},  // Color
-    {"PINK", 4285383423.0},  // Color
-    {"RED", 3861460991.0},  // Color
-    {"MAROON", 3189848063.0},  // Color
-    {"GREEN", 14954751.0},  // Color
-    {"LIME", 10366975.0},  // Color
-    {"DARKGREEN", 7679231.0},  // Color
-    {"SKYBLUE", 1723858943.0},  // Color
-    {"BLUE", 7991807.0},  // Color
-    {"DARKBLUE", 5418239.0},  // Color
-    {"PURPLE", 3363504127.0},  // Color
-    {"VIOLET", 2268905215.0},  // Color
-    {"DARKPURPLE", 1881112319.0},  // Color
-    {"BEIGE", 3551560703.0},  // Color
-    {"BROWN", 2137673727.0},  // Color
-    {"DARKBROWN", 1279209471.0},  // Color
-    {"WHITE", 4294967295.0},  // Color
-    {"BLACK", 255.0},  // Color
-    {"BLANK", 0.0},  // Color
-    {"MAGENTA", 4278255615.0},  // Color
-    {"RAYWHITE", 4126537215.0},  // Color
+    {"FLAG_VSYNC_HINT", 64.0},  // Set to try enabling V-Sync on GPU
+    {"FLAG_FULLSCREEN_MODE", 2.0},  // Set to run program in fullscreen
+    {"FLAG_WINDOW_RESIZABLE", 4.0},  // Set to allow resizable window
+    {"FLAG_WINDOW_UNDECORATED", 8.0},  // Set to disable window decoration (frame and buttons)
+    {"FLAG_WINDOW_HIDDEN", 128.0},  // Set to hide window
+    {"FLAG_WINDOW_MINIMIZED", 512.0},  // Set to minimize window (iconify)
+    {"FLAG_WINDOW_MAXIMIZED", 1024.0},  // Set to maximize window (expanded to monitor)
+    {"FLAG_WINDOW_UNFOCUSED", 2048.0},  // Set to window non focused
+    {"FLAG_WINDOW_TOPMOST", 4096.0},  // Set to window always on top
+    {"FLAG_WINDOW_ALWAYS_RUN", 256.0},  // Set to allow windows running while minimized
+    {"FLAG_WINDOW_TRANSPARENT", 16.0},  // Set to allow transparent framebuffer
+    {"FLAG_WINDOW_HIGHDPI", 8192.0},  // Set to support HighDPI
+    {"FLAG_WINDOW_MOUSE_PASSTHROUGH", 16384.0},  // Set to support mouse passthrough, only supported when FLAG_WINDOW_UNDECORATED
+    {"FLAG_BORDERLESS_WINDOWED_MODE", 32768.0},  // Set to run program in borderless windowed mode
+    {"FLAG_MSAA_4X_HINT", 32.0},  // Set to try enabling MSAA 4X
+    {"FLAG_INTERLACED_HINT", 65536.0},  // Set to try enabling interlaced video format (for V3D)
+    {"LOG_ALL", 0.0},  // Display all logs
+    {"LOG_TRACE", 1.0},  // Trace logging, intended for internal use only
+    {"LOG_DEBUG", 2.0},  // Debug logging, used for internal debugging, it should be disabled on release builds
+    {"LOG_INFO", 3.0},  // Info logging, used for program execution info
+    {"LOG_WARNING", 4.0},  // Warning logging, used on recoverable failures
+    {"LOG_ERROR", 5.0},  // Error logging, used on unrecoverable failures
+    {"LOG_FATAL", 6.0},  // Fatal logging, used to abort program: exit(EXIT_FAILURE)
+    {"LOG_NONE", 7.0},  // Disable logging
+    {"KEY_NULL", 0.0},  // Key: NULL, used for no key pressed
+    {"KEY_APOSTROPHE", 39.0},  // Key: '
+    {"KEY_COMMA", 44.0},  // Key: ,
+    {"KEY_MINUS", 45.0},  // Key: -
+    {"KEY_PERIOD", 46.0},  // Key: .
+    {"KEY_SLASH", 47.0},  // Key: /
+    {"KEY_ZERO", 48.0},  // Key: 0
+    {"KEY_ONE", 49.0},  // Key: 1
+    {"KEY_TWO", 50.0},  // Key: 2
+    {"KEY_THREE", 51.0},  // Key: 3
+    {"KEY_FOUR", 52.0},  // Key: 4
+    {"KEY_FIVE", 53.0},  // Key: 5
+    {"KEY_SIX", 54.0},  // Key: 6
+    {"KEY_SEVEN", 55.0},  // Key: 7
+    {"KEY_EIGHT", 56.0},  // Key: 8
+    {"KEY_NINE", 57.0},  // Key: 9
+    {"KEY_SEMICOLON", 59.0},  // Key: ;
+    {"KEY_EQUAL", 61.0},  // Key: =
+    {"KEY_A", 65.0},  // Key: A | a
+    {"KEY_B", 66.0},  // Key: B | b
+    {"KEY_C", 67.0},  // Key: C | c
+    {"KEY_D", 68.0},  // Key: D | d
+    {"KEY_E", 69.0},  // Key: E | e
+    {"KEY_F", 70.0},  // Key: F | f
+    {"KEY_G", 71.0},  // Key: G | g
+    {"KEY_H", 72.0},  // Key: H | h
+    {"KEY_I", 73.0},  // Key: I | i
+    {"KEY_J", 74.0},  // Key: J | j
+    {"KEY_K", 75.0},  // Key: K | k
+    {"KEY_L", 76.0},  // Key: L | l
+    {"KEY_M", 77.0},  // Key: M | m
+    {"KEY_N", 78.0},  // Key: N | n
+    {"KEY_O", 79.0},  // Key: O | o
+    {"KEY_P", 80.0},  // Key: P | p
+    {"KEY_Q", 81.0},  // Key: Q | q
+    {"KEY_R", 82.0},  // Key: R | r
+    {"KEY_S", 83.0},  // Key: S | s
+    {"KEY_T", 84.0},  // Key: T | t
+    {"KEY_U", 85.0},  // Key: U | u
+    {"KEY_V", 86.0},  // Key: V | v
+    {"KEY_W", 87.0},  // Key: W | w
+    {"KEY_X", 88.0},  // Key: X | x
+    {"KEY_Y", 89.0},  // Key: Y | y
+    {"KEY_Z", 90.0},  // Key: Z | z
+    {"KEY_LEFT_BRACKET", 91.0},  // Key: [
+    {"KEY_BACKSLASH", 92.0},  // Key: '\'
+    {"KEY_RIGHT_BRACKET", 93.0},  // Key: ]
+    {"KEY_GRAVE", 96.0},  // Key: `
+    {"KEY_SPACE", 32.0},  // Key: Space
+    {"KEY_ESCAPE", 256.0},  // Key: Esc
+    {"KEY_ENTER", 257.0},  // Key: Enter
+    {"KEY_TAB", 258.0},  // Key: Tab
+    {"KEY_BACKSPACE", 259.0},  // Key: Backspace
+    {"KEY_INSERT", 260.0},  // Key: Ins
+    {"KEY_DELETE", 261.0},  // Key: Del
+    {"KEY_RIGHT", 262.0},  // Key: Cursor right
+    {"KEY_LEFT", 263.0},  // Key: Cursor left
+    {"KEY_DOWN", 264.0},  // Key: Cursor down
+    {"KEY_UP", 265.0},  // Key: Cursor up
+    {"KEY_PAGE_UP", 266.0},  // Key: Page up
+    {"KEY_PAGE_DOWN", 267.0},  // Key: Page down
+    {"KEY_HOME", 268.0},  // Key: Home
+    {"KEY_END", 269.0},  // Key: End
+    {"KEY_CAPS_LOCK", 280.0},  // Key: Caps lock
+    {"KEY_SCROLL_LOCK", 281.0},  // Key: Scroll down
+    {"KEY_NUM_LOCK", 282.0},  // Key: Num lock
+    {"KEY_PRINT_SCREEN", 283.0},  // Key: Print screen
+    {"KEY_PAUSE", 284.0},  // Key: Pause
+    {"KEY_F1", 290.0},  // Key: F1
+    {"KEY_F2", 291.0},  // Key: F2
+    {"KEY_F3", 292.0},  // Key: F3
+    {"KEY_F4", 293.0},  // Key: F4
+    {"KEY_F5", 294.0},  // Key: F5
+    {"KEY_F6", 295.0},  // Key: F6
+    {"KEY_F7", 296.0},  // Key: F7
+    {"KEY_F8", 297.0},  // Key: F8
+    {"KEY_F9", 298.0},  // Key: F9
+    {"KEY_F10", 299.0},  // Key: F10
+    {"KEY_F11", 300.0},  // Key: F11
+    {"KEY_F12", 301.0},  // Key: F12
+    {"KEY_LEFT_SHIFT", 340.0},  // Key: Shift left
+    {"KEY_LEFT_CONTROL", 341.0},  // Key: Control left
+    {"KEY_LEFT_ALT", 342.0},  // Key: Alt left
+    {"KEY_LEFT_SUPER", 343.0},  // Key: Super left
+    {"KEY_RIGHT_SHIFT", 344.0},  // Key: Shift right
+    {"KEY_RIGHT_CONTROL", 345.0},  // Key: Control right
+    {"KEY_RIGHT_ALT", 346.0},  // Key: Alt right
+    {"KEY_RIGHT_SUPER", 347.0},  // Key: Super right
+    {"KEY_KB_MENU", 348.0},  // Key: KB menu
+    {"KEY_KP_0", 320.0},  // Key: Keypad 0
+    {"KEY_KP_1", 321.0},  // Key: Keypad 1
+    {"KEY_KP_2", 322.0},  // Key: Keypad 2
+    {"KEY_KP_3", 323.0},  // Key: Keypad 3
+    {"KEY_KP_4", 324.0},  // Key: Keypad 4
+    {"KEY_KP_5", 325.0},  // Key: Keypad 5
+    {"KEY_KP_6", 326.0},  // Key: Keypad 6
+    {"KEY_KP_7", 327.0},  // Key: Keypad 7
+    {"KEY_KP_8", 328.0},  // Key: Keypad 8
+    {"KEY_KP_9", 329.0},  // Key: Keypad 9
+    {"KEY_KP_DECIMAL", 330.0},  // Key: Keypad .
+    {"KEY_KP_DIVIDE", 331.0},  // Key: Keypad /
+    {"KEY_KP_MULTIPLY", 332.0},  // Key: Keypad *
+    {"KEY_KP_SUBTRACT", 333.0},  // Key: Keypad -
+    {"KEY_KP_ADD", 334.0},  // Key: Keypad +
+    {"KEY_KP_ENTER", 335.0},  // Key: Keypad Enter
+    {"KEY_KP_EQUAL", 336.0},  // Key: Keypad =
+    {"KEY_BACK", 4.0},  // Key: Android back button
+    {"KEY_MENU", 5.0},  // Key: Android menu button
+    {"KEY_VOLUME_UP", 24.0},  // Key: Android volume up button
+    {"KEY_VOLUME_DOWN", 25.0},  // Key: Android volume down button
+    {"MOUSE_BUTTON_LEFT", 0.0},  // Mouse button left
+    {"MOUSE_BUTTON_RIGHT", 1.0},  // Mouse button right
+    {"MOUSE_BUTTON_MIDDLE", 2.0},  // Mouse button middle (pressed wheel)
+    {"MOUSE_BUTTON_SIDE", 3.0},  // Mouse button side (advanced mouse device)
+    {"MOUSE_BUTTON_EXTRA", 4.0},  // Mouse button extra (advanced mouse device)
+    {"MOUSE_BUTTON_FORWARD", 5.0},  // Mouse button forward (advanced mouse device)
+    {"MOUSE_BUTTON_BACK", 6.0},  // Mouse button back (advanced mouse device)
+    {"MOUSE_CURSOR_DEFAULT", 0.0},  // Default pointer shape
+    {"MOUSE_CURSOR_ARROW", 1.0},  // Arrow shape
+    {"MOUSE_CURSOR_IBEAM", 2.0},  // Text writing cursor shape
+    {"MOUSE_CURSOR_CROSSHAIR", 3.0},  // Cross shape
+    {"MOUSE_CURSOR_POINTING_HAND", 4.0},  // Pointing hand cursor
+    {"MOUSE_CURSOR_RESIZE_EW", 5.0},  // Horizontal resize/move arrow shape
+    {"MOUSE_CURSOR_RESIZE_NS", 6.0},  // Vertical resize/move arrow shape
+    {"MOUSE_CURSOR_RESIZE_NWSE", 7.0},  // Top-left to bottom-right diagonal resize/move arrow shape
+    {"MOUSE_CURSOR_RESIZE_NESW", 8.0},  // The top-right to bottom-left diagonal resize/move arrow shape
+    {"MOUSE_CURSOR_RESIZE_ALL", 9.0},  // The omnidirectional resize/move cursor shape
+    {"MOUSE_CURSOR_NOT_ALLOWED", 10.0},  // The operation-not-allowed shape
+    {"GAMEPAD_BUTTON_UNKNOWN", 0.0},  // Unknown button, for error checking
+    {"GAMEPAD_BUTTON_LEFT_FACE_UP", 1.0},  // Gamepad left DPAD up button
+    {"GAMEPAD_BUTTON_LEFT_FACE_RIGHT", 2.0},  // Gamepad left DPAD right button
+    {"GAMEPAD_BUTTON_LEFT_FACE_DOWN", 3.0},  // Gamepad left DPAD down button
+    {"GAMEPAD_BUTTON_LEFT_FACE_LEFT", 4.0},  // Gamepad left DPAD left button
+    {"GAMEPAD_BUTTON_RIGHT_FACE_UP", 5.0},  // Gamepad right button up (i.e. PS3: Triangle, Xbox: Y)
+    {"GAMEPAD_BUTTON_RIGHT_FACE_RIGHT", 6.0},  // Gamepad right button right (i.e. PS3: Circle, Xbox: B)
+    {"GAMEPAD_BUTTON_RIGHT_FACE_DOWN", 7.0},  // Gamepad right button down (i.e. PS3: Cross, Xbox: A)
+    {"GAMEPAD_BUTTON_RIGHT_FACE_LEFT", 8.0},  // Gamepad right button left (i.e. PS3: Square, Xbox: X)
+    {"GAMEPAD_BUTTON_LEFT_TRIGGER_1", 9.0},  // Gamepad top/back trigger left (first), it could be a trailing button
+    {"GAMEPAD_BUTTON_LEFT_TRIGGER_2", 10.0},  // Gamepad top/back trigger left (second), it could be a trailing button
+    {"GAMEPAD_BUTTON_RIGHT_TRIGGER_1", 11.0},  // Gamepad top/back trigger right (first), it could be a trailing button
+    {"GAMEPAD_BUTTON_RIGHT_TRIGGER_2", 12.0},  // Gamepad top/back trigger right (second), it could be a trailing button
+    {"GAMEPAD_BUTTON_MIDDLE_LEFT", 13.0},  // Gamepad center buttons, left one (i.e. PS3: Select)
+    {"GAMEPAD_BUTTON_MIDDLE", 14.0},  // Gamepad center buttons, middle one (i.e. PS3: PS, Xbox: XBOX)
+    {"GAMEPAD_BUTTON_MIDDLE_RIGHT", 15.0},  // Gamepad center buttons, right one (i.e. PS3: Start)
+    {"GAMEPAD_BUTTON_LEFT_THUMB", 16.0},  // Gamepad joystick pressed button left
+    {"GAMEPAD_BUTTON_RIGHT_THUMB", 17.0},  // Gamepad joystick pressed button right
+    {"GAMEPAD_AXIS_LEFT_X", 0.0},  // Gamepad left stick X axis
+    {"GAMEPAD_AXIS_LEFT_Y", 1.0},  // Gamepad left stick Y axis
+    {"GAMEPAD_AXIS_RIGHT_X", 2.0},  // Gamepad right stick X axis
+    {"GAMEPAD_AXIS_RIGHT_Y", 3.0},  // Gamepad right stick Y axis
+    {"GAMEPAD_AXIS_LEFT_TRIGGER", 4.0},  // Gamepad back trigger left, pressure level: [1..-1]
+    {"GAMEPAD_AXIS_RIGHT_TRIGGER", 5.0},  // Gamepad back trigger right, pressure level: [1..-1]
+    {"MATERIAL_MAP_ALBEDO", 0.0},  // Albedo material (same as: MATERIAL_MAP_DIFFUSE)
+    {"MATERIAL_MAP_METALNESS", 1.0},  // Metalness material (same as: MATERIAL_MAP_SPECULAR)
+    {"MATERIAL_MAP_NORMAL", 2.0},  // Normal material
+    {"MATERIAL_MAP_ROUGHNESS", 3.0},  // Roughness material
+    {"MATERIAL_MAP_OCCLUSION", 4.0},  // Ambient occlusion material
+    {"MATERIAL_MAP_EMISSION", 5.0},  // Emission material
+    {"MATERIAL_MAP_HEIGHT", 6.0},  // Heightmap material
+    {"MATERIAL_MAP_CUBEMAP", 7.0},  // Cubemap material (NOTE: Uses GL_TEXTURE_CUBE_MAP)
+    {"MATERIAL_MAP_IRRADIANCE", 8.0},  // Irradiance material (NOTE: Uses GL_TEXTURE_CUBE_MAP)
+    {"MATERIAL_MAP_PREFILTER", 9.0},  // Prefilter material (NOTE: Uses GL_TEXTURE_CUBE_MAP)
+    {"MATERIAL_MAP_BRDF", 10.0},  // Brdf material
+    {"SHADER_LOC_VERTEX_POSITION", 0.0},  // Shader location: vertex attribute: position
+    {"SHADER_LOC_VERTEX_TEXCOORD01", 1.0},  // Shader location: vertex attribute: texcoord01
+    {"SHADER_LOC_VERTEX_TEXCOORD02", 2.0},  // Shader location: vertex attribute: texcoord02
+    {"SHADER_LOC_VERTEX_NORMAL", 3.0},  // Shader location: vertex attribute: normal
+    {"SHADER_LOC_VERTEX_TANGENT", 4.0},  // Shader location: vertex attribute: tangent
+    {"SHADER_LOC_VERTEX_COLOR", 5.0},  // Shader location: vertex attribute: color
+    {"SHADER_LOC_MATRIX_MVP", 6.0},  // Shader location: matrix uniform: model-view-projection
+    {"SHADER_LOC_MATRIX_VIEW", 7.0},  // Shader location: matrix uniform: view (camera transform)
+    {"SHADER_LOC_MATRIX_PROJECTION", 8.0},  // Shader location: matrix uniform: projection
+    {"SHADER_LOC_MATRIX_MODEL", 9.0},  // Shader location: matrix uniform: model (transform)
+    {"SHADER_LOC_MATRIX_NORMAL", 10.0},  // Shader location: matrix uniform: normal
+    {"SHADER_LOC_VECTOR_VIEW", 11.0},  // Shader location: vector uniform: view
+    {"SHADER_LOC_COLOR_DIFFUSE", 12.0},  // Shader location: vector uniform: diffuse color
+    {"SHADER_LOC_COLOR_SPECULAR", 13.0},  // Shader location: vector uniform: specular color
+    {"SHADER_LOC_COLOR_AMBIENT", 14.0},  // Shader location: vector uniform: ambient color
+    {"SHADER_LOC_MAP_ALBEDO", 15.0},  // Shader location: sampler2d texture: albedo (same as: SHADER_LOC_MAP_DIFFUSE)
+    {"SHADER_LOC_MAP_METALNESS", 16.0},  // Shader location: sampler2d texture: metalness (same as: SHADER_LOC_MAP_SPECULAR)
+    {"SHADER_LOC_MAP_NORMAL", 17.0},  // Shader location: sampler2d texture: normal
+    {"SHADER_LOC_MAP_ROUGHNESS", 18.0},  // Shader location: sampler2d texture: roughness
+    {"SHADER_LOC_MAP_OCCLUSION", 19.0},  // Shader location: sampler2d texture: occlusion
+    {"SHADER_LOC_MAP_EMISSION", 20.0},  // Shader location: sampler2d texture: emission
+    {"SHADER_LOC_MAP_HEIGHT", 21.0},  // Shader location: sampler2d texture: heightmap
+    {"SHADER_LOC_MAP_CUBEMAP", 22.0},  // Shader location: samplerCube texture: cubemap
+    {"SHADER_LOC_MAP_IRRADIANCE", 23.0},  // Shader location: samplerCube texture: irradiance
+    {"SHADER_LOC_MAP_PREFILTER", 24.0},  // Shader location: samplerCube texture: prefilter
+    {"SHADER_LOC_MAP_BRDF", 25.0},  // Shader location: sampler2d texture: brdf
+    {"SHADER_LOC_VERTEX_BONEIDS", 26.0},  // Shader location: vertex attribute: bone indices
+    {"SHADER_LOC_VERTEX_BONEWEIGHTS", 27.0},  // Shader location: vertex attribute: bone weights
+    {"SHADER_LOC_MATRIX_BONETRANSFORMS", 28.0},  // Shader location: matrix attribute: bone transforms (animation)
+    {"SHADER_LOC_VERTEX_INSTANCETRANSFORM", 29.0},  // Shader location: vertex attribute: instance transforms
+    {"SHADER_UNIFORM_FLOAT", 0.0},  // Shader uniform type: float
+    {"SHADER_UNIFORM_VEC2", 1.0},  // Shader uniform type: vec2 (2 float)
+    {"SHADER_UNIFORM_VEC3", 2.0},  // Shader uniform type: vec3 (3 float)
+    {"SHADER_UNIFORM_VEC4", 3.0},  // Shader uniform type: vec4 (4 float)
+    {"SHADER_UNIFORM_INT", 4.0},  // Shader uniform type: int
+    {"SHADER_UNIFORM_IVEC2", 5.0},  // Shader uniform type: ivec2 (2 int)
+    {"SHADER_UNIFORM_IVEC3", 6.0},  // Shader uniform type: ivec3 (3 int)
+    {"SHADER_UNIFORM_IVEC4", 7.0},  // Shader uniform type: ivec4 (4 int)
+    {"SHADER_UNIFORM_UINT", 8.0},  // Shader uniform type: unsigned int
+    {"SHADER_UNIFORM_UIVEC2", 9.0},  // Shader uniform type: uivec2 (2 unsigned int)
+    {"SHADER_UNIFORM_UIVEC3", 10.0},  // Shader uniform type: uivec3 (3 unsigned int)
+    {"SHADER_UNIFORM_UIVEC4", 11.0},  // Shader uniform type: uivec4 (4 unsigned int)
+    {"SHADER_UNIFORM_SAMPLER2D", 12.0},  // Shader uniform type: sampler2d
+    {"SHADER_ATTRIB_FLOAT", 0.0},  // Shader attribute type: float
+    {"SHADER_ATTRIB_VEC2", 1.0},  // Shader attribute type: vec2 (2 float)
+    {"SHADER_ATTRIB_VEC3", 2.0},  // Shader attribute type: vec3 (3 float)
+    {"SHADER_ATTRIB_VEC4", 3.0},  // Shader attribute type: vec4 (4 float)
+    {"PIXELFORMAT_UNCOMPRESSED_GRAYSCALE", 1.0},  // 8 bit per pixel (no alpha)
+    {"PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA", 2.0},  // 8*2 bpp (2 channels)
+    {"PIXELFORMAT_UNCOMPRESSED_R5G6B5", 3.0},  // 16 bpp
+    {"PIXELFORMAT_UNCOMPRESSED_R8G8B8", 4.0},  // 24 bpp
+    {"PIXELFORMAT_UNCOMPRESSED_R5G5B5A1", 5.0},  // 16 bpp (1 bit alpha)
+    {"PIXELFORMAT_UNCOMPRESSED_R4G4B4A4", 6.0},  // 16 bpp (4 bit alpha)
+    {"PIXELFORMAT_UNCOMPRESSED_R8G8B8A8", 7.0},  // 32 bpp
+    {"PIXELFORMAT_UNCOMPRESSED_R32", 8.0},  // 32 bpp (1 channel - float)
+    {"PIXELFORMAT_UNCOMPRESSED_R32G32B32", 9.0},  // 32*3 bpp (3 channels - float)
+    {"PIXELFORMAT_UNCOMPRESSED_R32G32B32A32", 10.0},  // 32*4 bpp (4 channels - float)
+    {"PIXELFORMAT_UNCOMPRESSED_R16", 11.0},  // 16 bpp (1 channel - half float)
+    {"PIXELFORMAT_UNCOMPRESSED_R16G16B16", 12.0},  // 16*3 bpp (3 channels - half float)
+    {"PIXELFORMAT_UNCOMPRESSED_R16G16B16A16", 13.0},  // 16*4 bpp (4 channels - half float)
+    {"PIXELFORMAT_COMPRESSED_DXT1_RGB", 14.0},  // 4 bpp (no alpha)
+    {"PIXELFORMAT_COMPRESSED_DXT1_RGBA", 15.0},  // 4 bpp (1 bit alpha)
+    {"PIXELFORMAT_COMPRESSED_DXT3_RGBA", 16.0},  // 8 bpp
+    {"PIXELFORMAT_COMPRESSED_DXT5_RGBA", 17.0},  // 8 bpp
+    {"PIXELFORMAT_COMPRESSED_ETC1_RGB", 18.0},  // 4 bpp
+    {"PIXELFORMAT_COMPRESSED_ETC2_RGB", 19.0},  // 4 bpp
+    {"PIXELFORMAT_COMPRESSED_ETC2_EAC_RGBA", 20.0},  // 8 bpp
+    {"PIXELFORMAT_COMPRESSED_PVRT_RGB", 21.0},  // 4 bpp
+    {"PIXELFORMAT_COMPRESSED_PVRT_RGBA", 22.0},  // 4 bpp
+    {"PIXELFORMAT_COMPRESSED_ASTC_4x4_RGBA", 23.0},  // 8 bpp
+    {"PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA", 24.0},  // 2 bpp
+    {"TEXTURE_FILTER_POINT", 0.0},  // No filter, pixel approximation
+    {"TEXTURE_FILTER_BILINEAR", 1.0},  // Linear filtering
+    {"TEXTURE_FILTER_TRILINEAR", 2.0},  // Trilinear filtering (linear with mipmaps)
+    {"TEXTURE_FILTER_ANISOTROPIC_4X", 3.0},  // Anisotropic filtering 4x
+    {"TEXTURE_FILTER_ANISOTROPIC_8X", 4.0},  // Anisotropic filtering 8x
+    {"TEXTURE_FILTER_ANISOTROPIC_16X", 5.0},  // Anisotropic filtering 16x
+    {"TEXTURE_WRAP_REPEAT", 0.0},  // Repeats texture in tiled mode
+    {"TEXTURE_WRAP_CLAMP", 1.0},  // Clamps texture to edge pixel in tiled mode
+    {"TEXTURE_WRAP_MIRROR_REPEAT", 2.0},  // Mirrors and repeats the texture in tiled mode
+    {"TEXTURE_WRAP_MIRROR_CLAMP", 3.0},  // Mirrors and clamps to border the texture in tiled mode
+    {"CUBEMAP_LAYOUT_AUTO_DETECT", 0.0},  // Automatically detect layout type
+    {"CUBEMAP_LAYOUT_LINE_VERTICAL", 1.0},  // Layout is defined by a vertical line with faces
+    {"CUBEMAP_LAYOUT_LINE_HORIZONTAL", 2.0},  // Layout is defined by a horizontal line with faces
+    {"CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR", 3.0},  // Layout is defined by a 3x4 cross with cubemap faces
+    {"CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE", 4.0},  // Layout is defined by a 4x3 cross with cubemap faces
+    {"FONT_DEFAULT", 0.0},  // Default font generation, anti-aliased
+    {"FONT_BITMAP", 1.0},  // Bitmap font generation, no anti-aliasing
+    {"FONT_SDF", 2.0},  // SDF font generation, requires external shader
+    {"BLEND_ALPHA", 0.0},  // Blend textures considering alpha (default)
+    {"BLEND_ADDITIVE", 1.0},  // Blend textures adding colors
+    {"BLEND_MULTIPLIED", 2.0},  // Blend textures multiplying colors
+    {"BLEND_ADD_COLORS", 3.0},  // Blend textures adding colors (alternative)
+    {"BLEND_SUBTRACT_COLORS", 4.0},  // Blend textures subtracting colors (alternative)
+    {"BLEND_ALPHA_PREMULTIPLY", 5.0},  // Blend premultiplied textures considering alpha
+    {"BLEND_CUSTOM", 6.0},  // Blend textures using custom src/dst factors (use rlSetBlendFactors())
+    {"BLEND_CUSTOM_SEPARATE", 7.0},  // Blend textures using custom rgb/alpha separate src/dst factors (use rlSetBlendFactorsSeparate())
+    {"GESTURE_NONE", 0.0},  // No gesture
+    {"GESTURE_TAP", 1.0},  // Tap gesture
+    {"GESTURE_DOUBLETAP", 2.0},  // Double tap gesture
+    {"GESTURE_HOLD", 4.0},  // Hold gesture
+    {"GESTURE_DRAG", 8.0},  // Drag gesture
+    {"GESTURE_SWIPE_RIGHT", 16.0},  // Swipe right gesture
+    {"GESTURE_SWIPE_LEFT", 32.0},  // Swipe left gesture
+    {"GESTURE_SWIPE_UP", 64.0},  // Swipe up gesture
+    {"GESTURE_SWIPE_DOWN", 128.0},  // Swipe down gesture
+    {"GESTURE_PINCH_IN", 256.0},  // Pinch in gesture
+    {"GESTURE_PINCH_OUT", 512.0},  // Pinch out gesture
+    {"CAMERA_CUSTOM", 0.0},  // Camera custom, controlled by user (UpdateCamera() does nothing)
+    {"CAMERA_FREE", 1.0},  // Camera free mode
+    {"CAMERA_ORBITAL", 2.0},  // Camera orbital, around target, zoom supported
+    {"CAMERA_FIRST_PERSON", 3.0},  // Camera first person
+    {"CAMERA_THIRD_PERSON", 4.0},  // Camera third person
+    {"CAMERA_PERSPECTIVE", 0.0},  // Perspective projection
+    {"CAMERA_ORTHOGRAPHIC", 1.0},  // Orthographic projection
+    {"NPATCH_NINE_PATCH", 0.0},  // Npatch layout: 3x3 tiles
+    {"NPATCH_THREE_PATCH_VERTICAL", 1.0},  // Npatch layout: 1x3 tiles
+    {"NPATCH_THREE_PATCH_HORIZONTAL", 2.0},  // Npatch layout: 3x1 tiles
+    {"RAYLIB_VERSION_MAJOR", 6.0},  // 
+    {"RAYLIB_VERSION_MINOR", 0.0},  // 
+    {"RAYLIB_VERSION_PATCH", 0.0},  // 
+    {"PI", 3.141592653589793},  // 
+    {"DEG2RAD", 0.017453292519943295},  // 
+    {"RAD2DEG", 57.29577951308232},  // 
+    {"LIGHTGRAY", 3368601855.0},  // Light Gray
+    {"GRAY", 2189591295.0},  // Gray
+    {"DARKGRAY", 1347440895.0},  // Dark Gray
+    {"YELLOW", 4260954367.0},  // Yellow
+    {"GOLD", 4291494143.0},  // Gold
+    {"ORANGE", 4288741631.0},  // Orange
+    {"PINK", 4285383423.0},  // Pink
+    {"RED", 3861460991.0},  // Red
+    {"MAROON", 3189848063.0},  // Maroon
+    {"GREEN", 14954751.0},  // Green
+    {"LIME", 10366975.0},  // Lime
+    {"DARKGREEN", 7679231.0},  // Dark Green
+    {"SKYBLUE", 1723858943.0},  // Sky Blue
+    {"BLUE", 7991807.0},  // Blue
+    {"DARKBLUE", 5418239.0},  // Dark Blue
+    {"PURPLE", 3363504127.0},  // Purple
+    {"VIOLET", 2268905215.0},  // Violet
+    {"DARKPURPLE", 1881112319.0},  // Dark Purple
+    {"BEIGE", 3551560703.0},  // Beige
+    {"BROWN", 2137673727.0},  // Brown
+    {"DARKBROWN", 1279209471.0},  // Dark Brown
+    {"WHITE", 4294967295.0},  // White
+    {"BLACK", 255.0},  // Black
+    {"BLANK", 0.0},  // Blank (Transparent)
+    {"MAGENTA", 4278255615.0},  // Magenta
+    {"RAYWHITE", 4126537215.0},  // My own White (raylib logo)
 };
 
 }  // namespace

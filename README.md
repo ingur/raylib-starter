@@ -29,11 +29,20 @@
 * `pkg-config`, OpenGL, X11 and Wayland development libraries
 * Optional: `emscripten` for the web target
 * Optional: `curl` and `python3`, only needed for `./build.sh bindgen`
-* Optional: [`luau-lsp`](https://github.com/JohnnyMorganz/luau-lsp) for editor support, run it with `--definitions=types/raylib.d.lua`
+* Optional: [`luau-lsp`](https://github.com/JohnnyMorganz/luau-lsp) for editor support, see [Editor setup](#editor-setup)
 * Develop on Linux, or on Windows via WSL2
 
 > [!TIP]
 > See the [wiki](https://github.com/ingur/raylib-starter/wiki/System-dependencies) for quick installation commands
+
+## Editor setup
+
+* Scripts are `.luau`, so editors detect the language without help
+* `types/raylib.d.luau` is what gives completion, parameter hints and hover docs
+* luau-lsp only reads definitions from its command line, so it needs pointing at that file once
+* VS Code: nothing to do, `.vscode/settings.json` is committed
+* Neovim: `.nvim.lua` is committed, it needs `vim.o.exrc = true` in your config
+* Any other editor: pass `--definitions:@raylib=<repo>/types/raylib.d.luau` and set `platform.type` to `standard`
 
 ## Getting Started
 
@@ -89,11 +98,11 @@ end
 
 ## Configuration/Tips
 
-* The Luau entrypoint is `game/main.lua`
+* The Luau entrypoint is `game/main.luau`
 * Define `update()` to run code every frame
 * Return `true` from `update()` to quit the game
-* Window startup settings live in `game/window.lua`, which returns a table
-* `require("name")` loads `game/name.lua` through the vfs, runs it once and caches its return value
+* Window startup settings live in `game/window.luau`, which returns a table
+* `require("name")` loads `game/name.luau` through the vfs, runs it once and caches its return value
 * Debug builds enable the `DEV` global
 * `./build.sh dev` enables hot reloading
 * `./build.sh run release` plays the packed build, exactly what players get
@@ -102,7 +111,7 @@ end
 * Reloads never free GPU resources
 * Unload them in `before_reload()` like the demo does
 * Project name lives in `build.zig`, dependency versions in `build.zig.zon`
-* Rerun `bindgen` after a raylib or Luau bump, it regenerates the bindings and `types/raylib.d.lua`
+* Rerun `bindgen` after a raylib or Luau bump, it regenerates the bindings and `types/raylib.d.luau`
 * `Vector2` and `Vector3` are the native `vector` type, built with `vector.create(x, y, z)`
 * `Color` is a packed `0xRRGGBBAA` number, and `rl.Color(r, g, b, a)` builds one
 * Every other raylib struct is userdata with field access and a constructor, like `rl.Rectangle(x, y, width, height)`

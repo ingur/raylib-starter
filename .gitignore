@@ -4,6 +4,7 @@
 /zig-pkg/
 /dist/
 /.cache/
+/build/
 /compile_flags.txt
 
 # Save files

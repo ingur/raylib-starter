@@ -167,25 +167,37 @@ inline const TypeInfo &UpvalueType(lua_State *L) {
     return *static_cast<const TypeInfo *>(lua_tolightuserdata(L, lua_upvalueindex(1)));
 }
 
+// The metatable is reachable through getmetatable(), so a script can call these
+// with anything as self. lua_touserdatatagged returns null on a tag mismatch and
+// the accessors dereference it, so the tag has to be checked, not assumed.
+inline void *CheckSelf(lua_State *L, const TypeInfo &type) {
+    void *self = lua_touserdatatagged(L, 1, type.tag);
+    if (self == nullptr)
+        luaL_typeerror(L, 1, type.name);
+    return self;
+}
+
 inline int IndexField(lua_State *L) {
     const TypeInfo &type = UpvalueType(L);
+    void *self = CheckSelf(L, type);
     const char *key = luaL_checkstring(L, 2);
     const FieldDef *field = FindField(type, key);
     if (field == nullptr)
         luaL_error(L, "%s has no field '%s'", type.name, key);
-    field->get(L, lua_touserdatatagged(L, 1, type.tag));
+    field->get(L, self);
     return 1;
 }
 
 inline int NewIndexField(lua_State *L) {
     const TypeInfo &type = UpvalueType(L);
+    void *self = CheckSelf(L, type);
     const char *key = luaL_checkstring(L, 2);
     const FieldDef *field = FindField(type, key);
     if (field == nullptr)
         luaL_error(L, "%s has no field '%s'", type.name, key);
     if (field->set == nullptr)
         luaL_error(L, "%s.%s is read only", type.name, key);
-    field->set(L, lua_touserdatatagged(L, 1, type.tag), 3);
+    field->set(L, self, 3);
     return 0;
 }
 
@@ -205,7 +217,10 @@ inline int ToStringField(lua_State *L) {
 // registry entry luaL_newmetatable leaves behind keeps it reachable regardless;
 // this is the same pairing Luau's own tagged userdata tests use.
 inline void RegisterType(lua_State *L, const TypeInfo &type) {
-    luaL_newmetatable(L, type.name);
+    // a duplicate name would silently clobber another tag's metatable in release,
+    // where lua_setuserdatametatable's guard compiles out
+    if (luaL_newmetatable(L, type.name) == 0)
+        luaL_error(L, "duplicate userdata type name '%s'", type.name);
     lua_pushlightuserdata(L, const_cast<TypeInfo *>(&type));
     lua_pushcclosure(L, IndexField, "__index", 1);
     lua_setfield(L, -2, "__index");
