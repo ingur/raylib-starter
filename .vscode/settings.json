@@ -1,0 +1,10 @@
+{
+  "luau-lsp.platform.type": "standard",
+  "luau-lsp.sourcemap.enabled": false,
+  "luau-lsp.types.definitionFiles": {
+    "@raylib": "types/raylib.d.lua"
+  },
+  "files.associations": {
+    "*.lua": "luau"
+  }
+}
