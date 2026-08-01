@@ -194,7 +194,7 @@ declare extern type Transform with
     --- Translation
     translation: vector
     --- Rotation
-    rotation: Vector4
+    rotation: Quaternion
     --- Scale
     scale: vector
 end
@@ -469,7 +469,7 @@ declare raylib: {
     --- Ends 3D mode and returns to default 2D orthographic mode
     EndMode3D: () -> (),
     --- Begin drawing to render texture
-    BeginTextureMode: (target: RenderTexture) -> (),
+    BeginTextureMode: (target: RenderTexture2D) -> (),
     --- Ends drawing to render texture
     EndTextureMode: () -> (),
     --- Begin custom shader drawing
@@ -502,26 +502,28 @@ declare raylib: {
     GetShaderLocation: (shader: Shader, uniformName: string) -> number,
     --- Get shader attribute location
     GetShaderLocationAttrib: (shader: Shader, attribName: string) -> number,
+    --- Set shader uniform value
+    SetShaderValue: (shader: Shader, locIndex: number, value: number | vector | Vector4 | buffer, uniformType: number) -> (),
     --- Set shader uniform value (matrix 4x4)
     SetShaderValueMatrix: (shader: Shader, locIndex: number, mat: Matrix) -> (),
     --- Set shader uniform value and bind the texture (sampler2d)
-    SetShaderValueTexture: (shader: Shader, locIndex: number, texture: Texture) -> (),
+    SetShaderValueTexture: (shader: Shader, locIndex: number, texture: Texture2D) -> (),
     --- Unload shader from GPU memory (VRAM)
     UnloadShader: (shader: Shader) -> (),
     --- Get a ray trace from screen position (i.e mouse)
-    GetScreenToWorldRay: (position: vector, camera: Camera3D) -> Ray,
+    GetScreenToWorldRay: (position: vector, camera: Camera) -> Ray,
     --- Get a ray trace from screen position (i.e mouse) in a viewport
-    GetScreenToWorldRayEx: (position: vector, camera: Camera3D, width: number, height: number) -> Ray,
+    GetScreenToWorldRayEx: (position: vector, camera: Camera, width: number, height: number) -> Ray,
     --- Get the screen space position for a 3d world space position
-    GetWorldToScreen: (position: vector, camera: Camera3D) -> vector,
+    GetWorldToScreen: (position: vector, camera: Camera) -> vector,
     --- Get size position for a 3d world space position
-    GetWorldToScreenEx: (position: vector, camera: Camera3D, width: number, height: number) -> vector,
+    GetWorldToScreenEx: (position: vector, camera: Camera, width: number, height: number) -> vector,
     --- Get the screen space position for a 2d camera world space position
     GetWorldToScreen2D: (position: vector, camera: Camera2D) -> vector,
     --- Get the world space position for a 2d camera screen space position
     GetScreenToWorld2D: (position: vector, camera: Camera2D) -> vector,
     --- Get camera transform matrix (view matrix)
-    GetCameraMatrix: (camera: Camera3D) -> Matrix,
+    GetCameraMatrix: (camera: Camera) -> Matrix,
     --- Get camera 2d transform matrix
     GetCameraMatrix2D: (camera: Camera2D) -> Matrix,
     --- Set target FPS (maximum)
@@ -550,8 +552,6 @@ declare raylib: {
     OpenURL: (url: string) -> (),
     --- Set the current threshold (minimum) log level
     SetTraceLogLevel: (logLevel: number) -> (),
-    --- Save text data to file (write), string must be '\0' terminated, returns true on success
-    SaveFileText: (fileName: string, text: string) -> boolean,
     --- Rename file (if exists)
     FileRename: (fileName: string, fileRename: string) -> number,
     --- Remove file (if exists)
@@ -564,16 +564,8 @@ declare raylib: {
     FileTextReplace: (fileName: string, search: string, replacement: string) -> number,
     --- Find text in existing file
     FileTextFindIndex: (fileName: string, search: string) -> number,
-    --- Check if file exists
-    FileExists: (fileName: string) -> boolean,
-    --- Check if a directory path exists
-    DirectoryExists: (dirPath: string) -> boolean,
     --- Check file extension (recommended include point: .png, .wav)
     IsFileExtension: (fileName: string, ext: string) -> boolean,
-    --- Get file length in bytes (NOTE: GetFileSize() conflicts with windows.h)
-    GetFileLength: (fileName: string) -> number,
-    --- Get file modification time (last write time)
-    GetFileModTime: (fileName: string) -> number,
     --- Get pointer to extension for a filename string (includes dot: '.png')
     GetFileExtension: (fileName: string) -> string,
     --- Get pointer to filename for a path string
@@ -596,18 +588,8 @@ declare raylib: {
     IsPathFile: (path: string) -> boolean,
     --- Check if fileName is valid for the platform/OS
     IsFileNameValid: (fileName: string) -> boolean,
-    --- Load directory filepaths, files and directories, no subdirs scan
-    LoadDirectoryFiles: (dirPath: string) -> FilePathList,
-    --- Load directory filepaths with extension filtering and subdir scan; some filters available: "*.*", "FILES*", "DIRS*"
-    LoadDirectoryFilesEx: (basePath: string, filter: string, scanSubdirs: boolean) -> FilePathList,
-    --- Unload filepaths
-    UnloadDirectoryFiles: (files: FilePathList) -> (),
     --- Check if a file has been dropped into window
     IsFileDropped: () -> boolean,
-    --- Load dropped filepaths
-    LoadDroppedFiles: () -> FilePathList,
-    --- Unload dropped filepaths
-    UnloadDroppedFiles: (files: FilePathList) -> (),
     --- Get the file count in a directory
     GetDirectoryFileCount: (dirPath: string) -> number,
     --- Get the file count in a directory with extension filtering and recursive directory scan. Use 'DIR' in the filter string to include directories in the result
@@ -721,11 +703,11 @@ declare raylib: {
     --- Get gesture pinch angle
     GetGesturePinchAngle: () -> number,
     --- Update camera position for selected mode
-    UpdateCamera: (camera: Camera3D, mode: number) -> (),
+    UpdateCamera: (camera: Camera, mode: number) -> (),
     --- Update camera movement/rotation
-    UpdateCameraPro: (camera: Camera3D, movement: vector, rotation: vector, zoom: number) -> (),
+    UpdateCameraPro: (camera: Camera, movement: vector, rotation: vector, zoom: number) -> (),
     --- Set texture and rectangle to be used on shapes drawing
-    SetShapesTexture: (texture: Texture, source: Rectangle) -> (),
+    SetShapesTexture: (texture: Texture2D, source: Rectangle) -> (),
     --- Get texture source rectangle that is used for shapes drawing
     GetShapesTextureRectangle: () -> Rectangle,
     --- Draw a pixel using geometry [Can be slow, use with care]
@@ -845,7 +827,7 @@ declare raylib: {
     --- Load image from RAW file data
     LoadImageRaw: (fileName: string, width: number, height: number, format: number, headerSize: number) -> Image,
     --- Load image from GPU texture data
-    LoadImageFromTexture: (texture: Texture) -> Image,
+    LoadImageFromTexture: (texture: Texture2D) -> Image,
     --- Load image from screen buffer and (screenshot)
     LoadImageFromScreen: () -> Image,
     --- Check if an image is valid (data and parameters)
@@ -900,6 +882,12 @@ declare raylib: {
     ImageAlphaPremultiply: (image: Image) -> (),
     --- Apply Gaussian blur using a box blur approximation
     ImageBlurGaussian: (image: Image, blurSize: number) -> (),
+    --- Resize image (Bicubic scaling algorithm)
+    ImageResize: (image: Image, newWidth: number, newHeight: number) -> (),
+    --- Resize image (Nearest-Neighbor scaling algorithm)
+    ImageResizeNN: (image: Image, newWidth: number, newHeight: number) -> (),
+    --- Resize canvas and fill with color
+    ImageResizeCanvas: (image: Image, newWidth: number, newHeight: number, offsetX: number, offsetY: number, fill: number) -> (),
     --- Compute all mipmap levels for a provided image
     ImageMipmaps: (image: Image) -> (),
     --- Dither image data to 16bpp or lower (Floyd-Steinberg dithering)
@@ -971,39 +959,41 @@ declare raylib: {
     --- Draw text (custom sprite font) within an image (destination)
     ImageDrawTextEx: (dst: Image, font: Font, text: string, position: vector, fontSize: number, spacing: number, tint: number) -> (),
     --- Load texture from file into GPU memory (VRAM)
-    LoadTexture: (fileName: string) -> Texture,
+    LoadTexture: (fileName: string) -> Texture2D,
     --- Load texture from image data
-    LoadTextureFromImage: (image: Image) -> Texture,
+    LoadTextureFromImage: (image: Image) -> Texture2D,
     --- Load cubemap from image, multiple image cubemap layouts supported
-    LoadTextureCubemap: (image: Image, layout: number) -> Texture,
+    LoadTextureCubemap: (image: Image, layout: number) -> TextureCubemap,
     --- Load texture for rendering (framebuffer)
-    LoadRenderTexture: (width: number, height: number) -> RenderTexture,
+    LoadRenderTexture: (width: number, height: number) -> RenderTexture2D,
     --- Check if a texture is valid (loaded in GPU)
-    IsTextureValid: (texture: Texture) -> boolean,
+    IsTextureValid: (texture: Texture2D) -> boolean,
     --- Unload texture from GPU memory (VRAM)
-    UnloadTexture: (texture: Texture) -> (),
+    UnloadTexture: (texture: Texture2D) -> (),
     --- Check if a render texture is valid (loaded in GPU)
-    IsRenderTextureValid: (target: RenderTexture) -> boolean,
+    IsRenderTextureValid: (target: RenderTexture2D) -> boolean,
     --- Unload render texture from GPU memory (VRAM)
-    UnloadRenderTexture: (target: RenderTexture) -> (),
+    UnloadRenderTexture: (target: RenderTexture2D) -> (),
+    --- Update GPU texture with new data (pixels should be able to fill texture)
+    UpdateTexture: (texture: Texture, pixels: buffer) -> (),
     --- Generate GPU mipmaps for a texture
-    GenTextureMipmaps: (texture: Texture) -> (),
+    GenTextureMipmaps: (texture: Texture2D) -> (),
     --- Set texture scaling filter mode
-    SetTextureFilter: (texture: Texture, filter: number) -> (),
+    SetTextureFilter: (texture: Texture2D, filter: number) -> (),
     --- Set texture wrapping mode
-    SetTextureWrap: (texture: Texture, wrap: number) -> (),
+    SetTextureWrap: (texture: Texture2D, wrap: number) -> (),
     --- Draw a Texture2D
-    DrawTexture: (texture: Texture, posX: number, posY: number, tint: number) -> (),
+    DrawTexture: (texture: Texture2D, posX: number, posY: number, tint: number) -> (),
     --- Draw a Texture2D with position defined as Vector2
-    DrawTextureV: (texture: Texture, position: vector, tint: number) -> (),
+    DrawTextureV: (texture: Texture2D, position: vector, tint: number) -> (),
     --- Draw a Texture2D with extended parameters
-    DrawTextureEx: (texture: Texture, position: vector, rotation: number, scale: number, tint: number) -> (),
+    DrawTextureEx: (texture: Texture2D, position: vector, rotation: number, scale: number, tint: number) -> (),
     --- Draw a part of a texture defined by a rectangle
-    DrawTextureRec: (texture: Texture, source: Rectangle, position: vector, tint: number) -> (),
+    DrawTextureRec: (texture: Texture2D, source: Rectangle, position: vector, tint: number) -> (),
     --- Draw a part of a texture defined by a rectangle with 'pro' parameters
-    DrawTexturePro: (texture: Texture, source: Rectangle, dest: Rectangle, origin: vector, rotation: number, tint: number) -> (),
+    DrawTexturePro: (texture: Texture2D, source: Rectangle, dest: Rectangle, origin: vector, rotation: number, tint: number) -> (),
     --- Draws a texture (or part of it) that stretches or shrinks nicely
-    DrawTextureNPatch: (texture: Texture, nPatchInfo: NPatchInfo, dest: Rectangle, origin: vector, rotation: number, tint: number) -> (),
+    DrawTextureNPatch: (texture: Texture2D, nPatchInfo: NPatchInfo, dest: Rectangle, origin: vector, rotation: number, tint: number) -> (),
     --- Check if two colors are equal
     ColorIsEqual: (col1: number, col2: number) -> boolean,
     --- Get color with alpha applied, alpha goes from 0.0f to 1.0f
@@ -1124,8 +1114,6 @@ declare raylib: {
     DrawRay: (ray: Ray, color: number) -> (),
     --- Draw a grid (centered at (0, 0, 0))
     DrawGrid: (slices: number, spacing: number) -> (),
-    --- Load model from files (meshes and materials)
-    LoadModel: (fileName: string) -> Model,
     --- Check if a model is valid (loaded in GPU, VAO/VBOs)
     IsModelValid: (model: Model) -> boolean,
     --- Unload model (including meshes) from memory (RAM and/or VRAM)
@@ -1143,11 +1131,11 @@ declare raylib: {
     --- Draw bounding box (wires)
     DrawBoundingBox: (box: BoundingBox, color: number) -> (),
     --- Draw a billboard texture
-    DrawBillboard: (camera: Camera3D, texture: Texture, position: vector, scale: number, tint: number) -> (),
+    DrawBillboard: (camera: Camera, texture: Texture2D, position: vector, scale: number, tint: number) -> (),
     --- Draw a billboard texture defined by source
-    DrawBillboardRec: (camera: Camera3D, texture: Texture, source: Rectangle, position: vector, size: vector, tint: number) -> (),
+    DrawBillboardRec: (camera: Camera, texture: Texture2D, source: Rectangle, position: vector, size: vector, tint: number) -> (),
     --- Draw a billboard texture defined by source and rotation
-    DrawBillboardPro: (camera: Camera3D, texture: Texture, source: Rectangle, position: vector, up: vector, size: vector, origin: vector, rotation: number, tint: number) -> (),
+    DrawBillboardPro: (camera: Camera, texture: Texture2D, source: Rectangle, position: vector, up: vector, size: vector, origin: vector, rotation: number, tint: number) -> (),
     --- Upload mesh vertex data in GPU and provide VAO/VBO ids
     UploadMesh: (mesh: Mesh, dynamic: boolean) -> (),
     --- Unload mesh data from CPU and GPU
@@ -1190,6 +1178,14 @@ declare raylib: {
     IsMaterialValid: (material: Material) -> boolean,
     --- Unload material from GPU memory (VRAM)
     UnloadMaterial: (material: Material) -> (),
+    --- Set texture for a material map type (MATERIAL_MAP_DIFFUSE, MATERIAL_MAP_SPECULAR...)
+    SetMaterialTexture: (material: Material, mapType: number, texture: Texture2D) -> (),
+    --- Set material for a mesh
+    SetModelMeshMaterial: (model: Model, meshId: number, materialId: number) -> (),
+    --- Update model animation pose (vertex buffers and bone matrices)
+    UpdateModelAnimation: (model: Model, anim: ModelAnimation, frame: number) -> (),
+    --- Update model animation pose, blending two animations
+    UpdateModelAnimationEx: (model: Model, animA: ModelAnimation, frameA: number, animB: ModelAnimation, frameB: number, blend: number) -> (),
     --- Check model animation skeleton match
     IsModelAnimationValid: (model: Model, anim: ModelAnimation) -> boolean,
     --- Check collision between two spheres
@@ -1256,6 +1252,8 @@ declare raylib: {
     WaveCopy: (wave: Wave) -> Wave,
     --- Crop a wave to defined frames range
     WaveCrop: (wave: Wave, initFrame: number, finalFrame: number) -> (),
+    --- Convert wave data to desired format
+    WaveFormat: (wave: Wave, sampleRate: number, sampleSize: number, channels: number) -> (),
     --- Checks if a music stream is valid (context and buffers initialized)
     IsMusicValid: (music: Music) -> boolean,
     --- Start music playing
@@ -1308,13 +1306,176 @@ declare raylib: {
     SetAudioStreamPan: (stream: AudioStream, pan: number) -> (),
     --- Default size for new audio streams
     SetAudioStreamBufferSizeDefault: (size: number) -> (),
+    Clamp: (value: number, min: number, max: number) -> number,
+    Lerp: (start: number, end_: number, amount: number) -> number,
+    Normalize: (value: number, start: number, end_: number) -> number,
+    Remap: (value: number, inputStart: number, inputEnd: number, outputStart: number, outputEnd: number) -> number,
+    Wrap: (value: number, min: number, max: number) -> number,
+    FloatEquals: (x: number, y: number) -> number,
+    Vector2Zero: () -> vector,
+    Vector2One: () -> vector,
+    Vector2Add: (v1: vector, v2: vector) -> vector,
+    Vector2AddValue: (v: vector, add: number) -> vector,
+    Vector2Subtract: (v1: vector, v2: vector) -> vector,
+    Vector2SubtractValue: (v: vector, sub: number) -> vector,
+    Vector2Length: (v: vector) -> number,
+    Vector2LengthSqr: (v: vector) -> number,
+    Vector2DotProduct: (v1: vector, v2: vector) -> number,
+    Vector2CrossProduct: (v1: vector, v2: vector) -> number,
+    Vector2Distance: (v1: vector, v2: vector) -> number,
+    Vector2DistanceSqr: (v1: vector, v2: vector) -> number,
+    Vector2Angle: (v1: vector, v2: vector) -> number,
+    Vector2LineAngle: (start: vector, end_: vector) -> number,
+    Vector2Scale: (v: vector, scale: number) -> vector,
+    Vector2Multiply: (v1: vector, v2: vector) -> vector,
+    Vector2Negate: (v: vector) -> vector,
+    Vector2Divide: (v1: vector, v2: vector) -> vector,
+    Vector2Normalize: (v: vector) -> vector,
+    Vector2Transform: (v: vector, mat: Matrix) -> vector,
+    Vector2Lerp: (v1: vector, v2: vector, amount: number) -> vector,
+    Vector2Reflect: (v: vector, normal: vector) -> vector,
+    Vector2Min: (v1: vector, v2: vector) -> vector,
+    Vector2Max: (v1: vector, v2: vector) -> vector,
+    Vector2Rotate: (v: vector, angle: number) -> vector,
+    Vector2MoveTowards: (v: vector, target: vector, maxDistance: number) -> vector,
+    Vector2Invert: (v: vector) -> vector,
+    Vector2Clamp: (v: vector, min: vector, max: vector) -> vector,
+    Vector2ClampValue: (v: vector, min: number, max: number) -> vector,
+    Vector2Equals: (p: vector, q: vector) -> number,
+    Vector2Refract: (v: vector, n: vector, r: number) -> vector,
+    Vector3Zero: () -> vector,
+    Vector3One: () -> vector,
+    Vector3Add: (v1: vector, v2: vector) -> vector,
+    Vector3AddValue: (v: vector, add: number) -> vector,
+    Vector3Subtract: (v1: vector, v2: vector) -> vector,
+    Vector3SubtractValue: (v: vector, sub: number) -> vector,
+    Vector3Scale: (v: vector, scalar: number) -> vector,
+    Vector3Multiply: (v1: vector, v2: vector) -> vector,
+    Vector3CrossProduct: (v1: vector, v2: vector) -> vector,
+    Vector3Perpendicular: (v: vector) -> vector,
+    Vector3Length: (v: vector) -> number,
+    Vector3LengthSqr: (v: vector) -> number,
+    Vector3DotProduct: (v1: vector, v2: vector) -> number,
+    Vector3Distance: (v1: vector, v2: vector) -> number,
+    Vector3DistanceSqr: (v1: vector, v2: vector) -> number,
+    Vector3Angle: (v1: vector, v2: vector) -> number,
+    Vector3Negate: (v: vector) -> vector,
+    Vector3Divide: (v1: vector, v2: vector) -> vector,
+    Vector3Normalize: (v: vector) -> vector,
+    Vector3Project: (v1: vector, v2: vector) -> vector,
+    Vector3Reject: (v1: vector, v2: vector) -> vector,
+    Vector3Transform: (v: vector, mat: Matrix) -> vector,
+    Vector3RotateByQuaternion: (v: vector, q: Quaternion) -> vector,
+    Vector3RotateByAxisAngle: (v: vector, axis: vector, angle: number) -> vector,
+    Vector3MoveTowards: (v: vector, target: vector, maxDistance: number) -> vector,
+    Vector3Lerp: (v1: vector, v2: vector, amount: number) -> vector,
+    Vector3CubicHermite: (v1: vector, tangent1: vector, v2: vector, tangent2: vector, amount: number) -> vector,
+    Vector3Reflect: (v: vector, normal: vector) -> vector,
+    Vector3Min: (v1: vector, v2: vector) -> vector,
+    Vector3Max: (v1: vector, v2: vector) -> vector,
+    Vector3Barycenter: (p: vector, a: vector, b: vector, c: vector) -> vector,
+    Vector3Unproject: (source: vector, projection: Matrix, view: Matrix) -> vector,
+    Vector3Invert: (v: vector) -> vector,
+    Vector3Clamp: (v: vector, min: vector, max: vector) -> vector,
+    Vector3ClampValue: (v: vector, min: number, max: number) -> vector,
+    Vector3Equals: (p: vector, q: vector) -> number,
+    Vector3Refract: (v: vector, n: vector, r: number) -> vector,
+    Vector4Zero: () -> Vector4,
+    Vector4One: () -> Vector4,
+    Vector4Add: (v1: Vector4, v2: Vector4) -> Vector4,
+    Vector4AddValue: (v: Vector4, add: number) -> Vector4,
+    Vector4Subtract: (v1: Vector4, v2: Vector4) -> Vector4,
+    Vector4SubtractValue: (v: Vector4, add: number) -> Vector4,
+    Vector4Length: (v: Vector4) -> number,
+    Vector4LengthSqr: (v: Vector4) -> number,
+    Vector4DotProduct: (v1: Vector4, v2: Vector4) -> number,
+    Vector4Distance: (v1: Vector4, v2: Vector4) -> number,
+    Vector4DistanceSqr: (v1: Vector4, v2: Vector4) -> number,
+    Vector4Scale: (v: Vector4, scale: number) -> Vector4,
+    Vector4Multiply: (v1: Vector4, v2: Vector4) -> Vector4,
+    Vector4Negate: (v: Vector4) -> Vector4,
+    Vector4Divide: (v1: Vector4, v2: Vector4) -> Vector4,
+    Vector4Normalize: (v: Vector4) -> Vector4,
+    Vector4Min: (v1: Vector4, v2: Vector4) -> Vector4,
+    Vector4Max: (v1: Vector4, v2: Vector4) -> Vector4,
+    Vector4Lerp: (v1: Vector4, v2: Vector4, amount: number) -> Vector4,
+    Vector4MoveTowards: (v: Vector4, target: Vector4, maxDistance: number) -> Vector4,
+    Vector4Invert: (v: Vector4) -> Vector4,
+    Vector4Equals: (p: Vector4, q: Vector4) -> number,
+    MatrixDeterminant: (mat: Matrix) -> number,
+    MatrixTrace: (mat: Matrix) -> number,
+    MatrixTranspose: (mat: Matrix) -> Matrix,
+    MatrixInvert: (mat: Matrix) -> Matrix,
+    MatrixIdentity: () -> Matrix,
+    MatrixAdd: (left: Matrix, right: Matrix) -> Matrix,
+    MatrixSubtract: (left: Matrix, right: Matrix) -> Matrix,
+    MatrixMultiply: (left: Matrix, right: Matrix) -> Matrix,
+    MatrixMultiplyValue: (left: Matrix, value: number) -> Matrix,
+    MatrixTranslate: (x: number, y: number, z: number) -> Matrix,
+    MatrixRotate: (axis: vector, angle: number) -> Matrix,
+    MatrixRotateX: (angle: number) -> Matrix,
+    MatrixRotateY: (angle: number) -> Matrix,
+    MatrixRotateZ: (angle: number) -> Matrix,
+    MatrixRotateXYZ: (angle: vector) -> Matrix,
+    MatrixRotateZYX: (angle: vector) -> Matrix,
+    MatrixScale: (x: number, y: number, z: number) -> Matrix,
+    MatrixFrustum: (left: number, right: number, bottom: number, top: number, nearPlane: number, farPlane: number) -> Matrix,
+    MatrixPerspective: (fovY: number, aspect: number, nearPlane: number, farPlane: number) -> Matrix,
+    MatrixOrtho: (left: number, right: number, bottom: number, top: number, nearPlane: number, farPlane: number) -> Matrix,
+    MatrixLookAt: (eye: vector, target: vector, up: vector) -> Matrix,
+    QuaternionAdd: (q1: Quaternion, q2: Quaternion) -> Quaternion,
+    QuaternionAddValue: (q: Quaternion, add: number) -> Quaternion,
+    QuaternionSubtract: (q1: Quaternion, q2: Quaternion) -> Quaternion,
+    QuaternionSubtractValue: (q: Quaternion, sub: number) -> Quaternion,
+    QuaternionIdentity: () -> Quaternion,
+    QuaternionLength: (q: Quaternion) -> number,
+    QuaternionNormalize: (q: Quaternion) -> Quaternion,
+    QuaternionInvert: (q: Quaternion) -> Quaternion,
+    QuaternionMultiply: (q1: Quaternion, q2: Quaternion) -> Quaternion,
+    QuaternionScale: (q: Quaternion, mul: number) -> Quaternion,
+    QuaternionDivide: (q1: Quaternion, q2: Quaternion) -> Quaternion,
+    QuaternionLerp: (q1: Quaternion, q2: Quaternion, amount: number) -> Quaternion,
+    QuaternionNlerp: (q1: Quaternion, q2: Quaternion, amount: number) -> Quaternion,
+    QuaternionSlerp: (q1: Quaternion, q2: Quaternion, amount: number) -> Quaternion,
+    QuaternionCubicHermiteSpline: (q1: Quaternion, outTangent1: Quaternion, q2: Quaternion, inTangent2: Quaternion, t: number) -> Quaternion,
+    QuaternionFromVector3ToVector3: (from: vector, to: vector) -> Quaternion,
+    QuaternionFromMatrix: (mat: Matrix) -> Quaternion,
+    QuaternionToMatrix: (q: Quaternion) -> Matrix,
+    QuaternionFromAxisAngle: (axis: vector, angle: number) -> Quaternion,
+    QuaternionFromEuler: (pitch: number, yaw: number, roll: number) -> Quaternion,
+    QuaternionToEuler: (q: Quaternion) -> vector,
+    QuaternionTransform: (q: Quaternion, mat: Matrix) -> Quaternion,
+    QuaternionEquals: (p: Quaternion, q: Quaternion) -> number,
+    MatrixCompose: (translation: vector, rotation: Quaternion, scale: vector) -> Matrix,
 
+    --- Check a directory in the virtual filesystem, loose files and the pak
+    DirectoryExists: (dirPath: string) -> boolean,
+    --- Check a file in the virtual filesystem, loose files and the pak
+    FileExists: (fileName: string) -> boolean,
+    --- Byte length of a file in the virtual filesystem
+    GetFileLength: (fileName: string) -> number,
+    --- Modification time of a file in the virtual filesystem
+    GetFileModTime: (fileName: string) -> number,
+    --- List files in a directory, loose files and the pak
+    LoadDirectoryFiles: (dirPath: string, recursive: boolean?) -> {string},
+    --- Paths of the files dropped onto the window
+    LoadDroppedFiles: () -> {string},
     --- Read a binary file through the virtual filesystem
     LoadFileData: (fileName: string) -> buffer,
     --- Read a text file through the virtual filesystem
     LoadFileText: (fileName: string) -> string,
+    --- Load a model through the virtual filesystem
+    LoadModel: (fileName: string) -> Model,
+    --- Load model animations through the virtual filesystem
+    LoadModelAnimations: (fileName: string) -> {ModelAnimation},
     --- Load music through the virtual filesystem
     LoadMusicStream: (fileName: string) -> Music,
+    --- Write a binary file, creating parent directories
+    SaveFileData: (fileName: string, data: buffer) -> boolean,
+    --- Write a text file, creating parent directories
+    SaveFileText: (fileName: string, text: string) -> boolean,
+    --- Unload one animation or a table of them
+    UnloadModelAnimations: (animations: {ModelAnimation} | ModelAnimation) -> (),
     --- Unload music and release its streaming buffer
     UnloadMusicStream: (music: Music) -> (),
 
@@ -1328,7 +1489,7 @@ declare raylib: {
     Camera3D: (position: vector?, target: vector?, up: vector?, fovy: number?, projection: number?) -> Camera3D,
     Camera2D: (offset: vector?, target: vector?, rotation: number?, zoom: number?) -> Camera2D,
     MaterialMap: (color: number?, value: number?) -> MaterialMap,
-    Transform: (translation: vector?, rotation: Vector4?, scale: vector?) -> Transform,
+    Transform: (translation: vector?, rotation: Quaternion?, scale: vector?) -> Transform,
     BoneInfo: (parent: number?) -> BoneInfo,
     Ray: (position: vector?, direction: vector?) -> Ray,
     RayCollision: (hit: boolean?, distance: number?, point: vector?, normal: vector?) -> RayCollision,
@@ -2004,4 +2165,5 @@ declare raylib: {
     MAGENTA: number,
     --- My own White (raylib logo)
     RAYWHITE: number,
+    EPSILON: number,
 }

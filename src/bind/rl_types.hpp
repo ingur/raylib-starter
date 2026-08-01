@@ -1,7 +1,7 @@
 #pragma once
 // raylib types mapped onto native Luau values instead of userdata
 
-#include "bind.hpp"
+#include "bind/bind.hpp"
 #include "raylib.h"
 
 namespace bind {

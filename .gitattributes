@@ -1,3 +1,3 @@
-src/raylib_bind.hpp linguist-generated
-src/raylib_bind.cpp linguist-generated
+src/bind/raylib_bind.hpp linguist-generated
+src/bind/raylib_bind.cpp linguist-generated
 types/raylib.d.luau linguist-generated

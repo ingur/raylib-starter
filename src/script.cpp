@@ -1,7 +1,7 @@
 #include "script.hpp"
 
-#include "raylib_bind.hpp"
-#include "rl_adapters.hpp"
+#include "bind/raylib_bind.hpp"
+#include "bind/rl_adapters.hpp"
 #include "vfs.hpp"
 
 #include "lua.h"
@@ -14,8 +14,12 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <memory>
+#include <new>
 #include <optional>
+#include <string>
+#include <vector>
 
 namespace {
 
@@ -26,6 +30,141 @@ const char *const kTraceback = "game.traceback";
 // unique address parked in the cache while a module is running, so a module
 // that requires itself fails loudly instead of recursing forever
 char kLoading;
+
+// a reload carries plain data only. a resource handle would outlive the unload
+// adapter that owns it, and a function cannot be rebuilt
+constexpr int kMaxStateDepth = 64;
+
+struct Snapshotter {
+    std::string error;
+    std::vector<const void *> seen;  // every table, so sharing and cycles both fail
+
+    bool Take(lua_State *L, int idx, ScriptState &out, std::string &path, int depth);
+
+private:
+    bool Reject(const std::string &path, const char *what) {
+        error = path + " is " + what;
+        return false;
+    }
+};
+
+bool Snapshotter::Take(lua_State *L, int idx, ScriptState &out, std::string &path, int depth) {
+    switch (lua_type(L, idx)) {
+        case LUA_TBOOLEAN:
+            out.kind = ScriptState::Kind::Bool;
+            out.boolean = lua_toboolean(L, idx) != 0;
+            return true;
+        case LUA_TNUMBER:
+            out.kind = ScriptState::Kind::Number;
+            out.number = lua_tonumber(L, idx);
+            return true;
+        case LUA_TSTRING: {
+            std::size_t len = 0;
+            const char *text = lua_tolstring(L, idx, &len);
+            out.kind = ScriptState::Kind::String;
+            out.bytes.assign(text, len);
+            return true;
+        }
+        case LUA_TVECTOR: {
+            const float *v = lua_tovector(L, idx);
+            out.kind = ScriptState::Kind::Vector;
+            out.vec[0] = v[0];
+            out.vec[1] = v[1];
+            out.vec[2] = v[2];
+            return true;
+        }
+        case LUA_TBUFFER: {
+            std::size_t len = 0;
+            const char *data = static_cast<const char *>(lua_tobuffer(L, idx, &len));
+            out.kind = ScriptState::Kind::Buffer;
+            out.bytes.assign(data, len);
+            return true;
+        }
+        case LUA_TTABLE:
+            break;
+        default:
+            return Reject(path, (std::string("a ") + luaL_typename(L, idx)).c_str());
+    }
+
+    if (depth >= kMaxStateDepth) return Reject(path, "nested too deeply");
+    if (lua_getmetatable(L, idx)) {
+        lua_pop(L, 1);
+        return Reject(path, "a table with a metatable");
+    }
+
+    const void *identity = lua_topointer(L, idx);
+    for (const void *other : seen)
+        if (other == identity) return Reject(path, "a table that appears twice in the state");
+    seen.push_back(identity);
+
+    out.kind = ScriptState::Kind::Table;
+    const int table = lua_absindex(L, idx);
+    for (int iter = lua_rawiter(L, table, 0); iter >= 0; iter = lua_rawiter(L, table, iter)) {
+        const int keyType = lua_type(L, -2);
+        if (keyType != LUA_TSTRING && keyType != LUA_TNUMBER) {
+            const std::string what = std::string("keyed by a ") + luaL_typename(L, -2);
+            lua_pop(L, 2);
+            return Reject(path, what.c_str());
+        }
+
+        // lua_tostring would convert a numeric key in place and derail the iterator
+        std::string child = path;
+        if (keyType == LUA_TSTRING) {
+            child += '.';
+            child += lua_tostring(L, -2);
+        } else {
+            char index[32];
+            std::snprintf(index, sizeof(index), "[%.14g]", lua_tonumber(L, -2));
+            child += index;
+        }
+
+        out.pairs.emplace_back();
+        auto &entry = out.pairs.back();
+        const bool ok = Take(L, -2, entry.first, child, depth + 1) &&
+                        Take(L, -1, entry.second, child, depth + 1);
+        if (!ok) {
+            lua_pop(L, 2);
+            return false;
+        }
+        lua_pop(L, 2);
+    }
+    return true;
+}
+
+void PushState(lua_State *L, const ScriptState &state) {
+    switch (state.kind) {
+        case ScriptState::Kind::Bool:
+            lua_pushboolean(L, state.boolean);
+            return;
+        case ScriptState::Kind::Number:
+            lua_pushnumber(L, state.number);
+            return;
+        case ScriptState::Kind::String:
+            lua_pushlstring(L, state.bytes.data(), state.bytes.size());
+            return;
+        case ScriptState::Kind::Vector:
+            lua_pushvector(L, state.vec[0], state.vec[1], state.vec[2]);
+            return;
+        case ScriptState::Kind::Buffer:
+            std::memcpy(lua_newbuffer(L, state.bytes.size()), state.bytes.data(), state.bytes.size());
+            return;
+        case ScriptState::Kind::Table:
+            break;
+    }
+    lua_createtable(L, 0, static_cast<int>(state.pairs.size()));
+    for (const auto &entry : state.pairs) {
+        PushState(L, entry.first);
+        PushState(L, entry.second);
+        lua_rawset(L, -3);
+    }
+}
+
+// rebuilding allocates, so it runs under Pcall and an out of memory stays a
+// script error
+int RebuildState(lua_State *L) {
+    PushState(L, *static_cast<const ScriptState *>(lua_tolightuserdata(L, 1)));
+    return 1;
+}
 
 // leaves the chunk or its compile error on the stack
 bool LoadChunk(lua_State *L, const char *chunkname, const std::string &source) {
@@ -70,9 +209,14 @@ int Traceback(lua_State *L) {
 // path always agree. Without that, require("a/b") and require("a\\b") would read
 // the same file but run and cache it twice, giving two modules with two states
 int HostRequire(lua_State *L) {
-    std::string module = luaL_checkstring(L, 1);
+    std::size_t len = 0;
+    const char *raw = luaL_checklstring(L, 1, &len);
+    std::string module(raw, len);
     for (char &c : module)
         if (c == '\\') c = '/';
+    // an embedded NUL truncates the name, and . or .. escapes game/
+    if (module.find('\0') != std::string::npos || !vfs::PlainPath(module))
+        luaL_error(L, "module '%s' is not a plain game/ path", module.c_str());
     lua_settop(L, 0);
     lua_pushlstring(L, module.data(), module.size());  // 1: canonical name
     const char *name = lua_tostring(L, 1);
@@ -161,12 +305,29 @@ bool Script::Reset(bool devMode) {
 
     OpenRaylib(L);
     vfs::OpenLoaders(L);
+
+    // the definitions file promises these, so a missed registration has to fail
+    // here rather than reach a script as a nil field
+    lua_getglobal(L, "raylib");
+    for (const char *name : kHostFunctions) {
+        lua_getfield(L, -1, name);
+        const bool installed = lua_isfunction(L, -1);
+        lua_pop(L, 1);
+        if (!installed) {
+            std::snprintf(lastError, sizeof(lastError), "host function %s was not installed", name);
+            std::fprintf(stderr, "%s\n", lastError);
+            lua_pop(L, 1);
+            Close();
+            return false;
+        }
+    }
+    lua_pop(L, 1);
     return true;
 }
 
 void Script::ResetResult() {
-    lastString.clear();
-    lastIsString = false;
+    lastState.reset();
+    lastStateError.clear();
     lastNil = true;
     lastTruthy = false;
 }
@@ -174,13 +335,30 @@ void Script::ResetResult() {
 void Script::CaptureResult() {
     lastNil = lua_isnil(L, -1);
     lastTruthy = lua_toboolean(L, -1) != 0;
-    if (lua_type(L, -1) == LUA_TSTRING) {
-        size_t len = 0;
-        const char *text = lua_tolstring(L, -1, &len);
-        lastString.assign(text, len);
-        lastIsString = true;
+    if (lua_type(L, -1) == LUA_TTABLE) {
+        Snapshotter snapshot;
+        ScriptState state;
+        std::string path = "state";
+        // a throw unwinds mid iteration and leaves keys and values behind
+        const int top = lua_gettop(L);
+        try {
+            if (snapshot.Take(L, -1, state, path, 0))
+                lastState = std::move(state);
+            else
+                lastStateError = std::move(snapshot.error);
+        } catch (const std::bad_alloc &) {
+            lua_settop(L, top);
+            lastStateError = "state is too large";
+        }
     }
     lua_pop(L, 1);
+}
+
+bool Script::TakeResultState(ScriptState &out) {
+    if (!lastState) return false;
+    out = std::move(*lastState);
+    lastState.reset();
+    return true;
 }
 
 void Script::CaptureError() {
@@ -268,19 +446,23 @@ bool Script::CallGlobal(const char *name, bool *missing) {
     return true;
 }
 
-bool Script::CallGlobalStr(const char *name, const char *arg, bool *missing) {
+bool Script::CallGlobalTable(const char *name, const ScriptState &arg, bool *missing) {
     if (missing != nullptr) *missing = false;
     ResetResult();
     if (NoState()) return false;
 
+    lua_pushcfunction(L, RebuildState, "rebuild");
+    lua_pushlightuserdata(L, const_cast<ScriptState *>(&arg));
+    if (!Pcall(1, 1)) return false;
+
     lua_getglobal(L, name);
     if (!lua_isfunction(L, -1)) {
-        lua_pop(L, 1);
+        lua_pop(L, 2);  // the function slot and the rebuilt state
         if (missing != nullptr) *missing = true;
         std::snprintf(lastError, sizeof(lastError), "%s() is not defined", name);
         return false;
     }
-    lua_pushstring(L, arg);
+    lua_insert(L, -2);  // move the state above the function
     if (!Pcall(1, 1)) return false;
     CaptureResult();
     return true;

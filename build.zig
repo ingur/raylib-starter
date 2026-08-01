@@ -83,6 +83,27 @@ pub fn build(b: *std.Build) !void {
     const api_dir = b.addWriteFiles();
     _ = api_dir.addCopyFile(fetch_api.addOutputFileArg("raylib_api.json"), "raylib_api.json");
 
+    // upstream publishes no raymath_api.json, so build raylib's own parser and
+    // run it over the pinned header
+    const fetch_parser = b.addSystemCommand(&.{ "curl", "-fsSL", b.fmt(
+        "https://raw.githubusercontent.com/raysan5/raylib/{s}/tools/rlparser/rlparser.c",
+        .{raylibTag()},
+    ), "-o" });
+    const parser_src = fetch_parser.addOutputFileArg("rlparser.c");
+
+    const build_parser = b.addSystemCommand(&.{ b.graph.zig_exe, "cc", "-o" });
+    const parser_exe = build_parser.addOutputFileArg("rlparser");
+    build_parser.addFileArg(parser_src);
+
+    const parse_raymath = std.Build.Step.Run.create(b, "run rlparser");
+    parse_raymath.addFileArg(parser_exe);
+    parse_raymath.addArg("-i");
+    parse_raymath.addFileArg(raylib_dep.path("src/raymath.h"));
+    parse_raymath.addArg("-o");
+    const raymath_api = parse_raymath.addOutputFileArg("raymath_api.json");
+    parse_raymath.addArgs(&.{ "-f", "JSON", "-d", "RMAPI" });
+    _ = api_dir.addCopyFile(raymath_api, "raymath_api.json");
+
     const bindgen = b.addSystemCommand(&.{ "python3", "tools/bindgen.py" });
     bindgen.addDirectoryArg(api_dir.getDirectory());
     bindgen.setCwd(b.path(""));
@@ -301,9 +322,9 @@ fn web(b: *std.Build, opts: WebOptions) !void {
         "-lidbfs.js",
     });
     link.addArg("--shell-file");
-    link.addFileArg(b.path("src/web_shell.html"));
+    link.addFileArg(b.path("src/web/shell.html"));
     link.addArg("--pre-js");
-    link.addFileArg(b.path("src/web_save.js"));
+    link.addFileArg(b.path("src/web/save.js"));
     link.addArgs(&.{ "--preload-file", "zig-out/web/" ++ assets_pak ++ "@/" ++ assets_pak });
     link.addArgs(&.{ "-o", "zig-out/web/index.html" });
     link.step.dependOn(&pak.step);

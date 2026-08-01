@@ -1,12 +1,18 @@
 #pragma once
-// adapters for raylib signatures the generic binder cannot expose safely
-// add one adapter per signature shape
+// adapters for what the binding itself introduces, in three kinds:
+// the death of a handle, the recovery of an open scope, and a size that only
+// exists as a pointer in C
+// raylib owns its own parameter contracts, a call that is wrong in C is wrong
+// here for the same reason
 
-#include "bind.hpp"
+#include "bind/rl_types.hpp"
 #include "raylib.h"
+
+#include <cstring>
 
 namespace adapt {
 
+// ------------------------------------------------------------ ownership
 // the unload adapter zeroes and releases its userdata, later use errors and a
 // repeated unload is a no-op
 // fields whose structs own allocations have no getter or setter, so field reads
@@ -30,6 +36,7 @@ struct Unload<void (*)(T), fn> {
     }
 };
 
+// ----------------------------------------------------------------- scope
 // raylib's Begin/End pairs leave global render state open. A script that raises
 // between them would otherwise draw the error screen into a render target, under
 // its shader, or with its projection, and a script that forgets an End would
@@ -121,6 +128,95 @@ struct ScopeEnd {
         return results;
     }
 };
+
+// ------------------------------------------------------- representation
+// a script holds no pointer, so where raylib takes a void * whose size lives
+// in another argument, the adapter is the only place that size can be rebuilt
+
+// rlgl casts the value pointer to float, int or unsigned int, so the scratch
+// has to satisfy all three alignments
+union UniformValue {
+    float f[4];
+    int i[4];
+    unsigned int u[4];
+};
+
+inline void ReadUniformBuffer(lua_State *L, int narg, UniformValue *out, std::size_t bytes) {
+    std::size_t len = 0;
+    const void *data = luaL_checkbuffer(L, narg, &len);
+    if (len != bytes)
+        luaL_argerror(L, narg, TextFormat("this uniform needs a buffer of %d bytes", (int)bytes));
+    std::memcpy(out, data, bytes);
+}
+
+inline int SetShaderValue(lua_State *L) {
+    const Shader shader = bind::Conv<Shader>::Check(L, 1);
+    const int locIndex = bind::CheckIntegral<int>(L, 2);
+    const int uniformType = bind::CheckIntegral<int>(L, 4);
+
+    UniformValue value{};
+    switch (uniformType) {
+        case SHADER_UNIFORM_FLOAT:
+            value.f[0] = static_cast<float>(luaL_checknumber(L, 3));
+            break;
+        case SHADER_UNIFORM_VEC2:
+        case SHADER_UNIFORM_VEC3: {
+            const float *v = luaL_checkvector(L, 3);
+            value.f[0] = v[0];
+            value.f[1] = v[1];
+            value.f[2] = uniformType == SHADER_UNIFORM_VEC3 ? v[2] : 0.0f;
+            break;
+        }
+        case SHADER_UNIFORM_VEC4: {
+            const Vector4 v = bind::Conv<Vector4>::Check(L, 3);
+            value.f[0] = v.x;
+            value.f[1] = v.y;
+            value.f[2] = v.z;
+            value.f[3] = v.w;
+            break;
+        }
+        case SHADER_UNIFORM_INT:
+        case SHADER_UNIFORM_SAMPLER2D:
+            value.i[0] = bind::CheckIntegral<int>(L, 3);
+            break;
+        case SHADER_UNIFORM_UINT:
+            value.u[0] = bind::CheckIntegral<unsigned int>(L, 3);
+            break;
+        case SHADER_UNIFORM_IVEC2:
+        case SHADER_UNIFORM_UIVEC2:
+            ReadUniformBuffer(L, 3, &value, 8);
+            break;
+        case SHADER_UNIFORM_IVEC3:
+        case SHADER_UNIFORM_UIVEC3:
+            ReadUniformBuffer(L, 3, &value, 12);
+            break;
+        case SHADER_UNIFORM_IVEC4:
+        case SHADER_UNIFORM_UIVEC4:
+            ReadUniformBuffer(L, 3, &value, 16);
+            break;
+        default:
+            luaL_argerror(L, 4, "unknown shader uniform type");
+    }
+
+    ::SetShaderValue(shader, locIndex, &value, uniformType);
+    return 0;
+}
+
+inline int UpdateTexture(lua_State *L) {
+    const Texture texture = bind::Conv<Texture>::Check(L, 1);
+    // the buffer has to match what rlgl will read, which only the texture knows
+    const int expected = ::GetPixelDataSize(texture.width, texture.height, texture.format);
+    if (expected <= 0)
+        luaL_argerror(L, 1, "texture has no pixel format");
+
+    std::size_t len = 0;
+    const void *pixels = luaL_checkbuffer(L, 2, &len);
+    if (len != static_cast<std::size_t>(expected))
+        luaL_argerror(L, 2, TextFormat("this texture needs a buffer of %d bytes", expected));
+
+    ::UpdateTexture(texture, pixels);
+    return 0;
+}
 
 }  // namespace adapt
 

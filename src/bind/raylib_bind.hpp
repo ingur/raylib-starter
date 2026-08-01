@@ -2,7 +2,7 @@
 // run ./build.sh bindgen after a raylib bump
 #pragma once
 
-#include "bind.hpp"
+#include "bind/bind.hpp"
 #include "raylib.h"
 
 namespace bind {
@@ -175,3 +175,23 @@ static_assert(kRaylibTagCount < kReleasedTag, "raylib tags collide with the rele
 
 // Creates the raylib global and userdata metatables for this VM.
 void OpenRaylib(lua_State *L);
+
+// names the definitions file promises, installed by src/vfs.cpp. the host
+// checks them after OpenLoaders so a missing one cannot reach a script as nil
+inline constexpr const char *kHostFunctions[] = {
+    "DirectoryExists",
+    "FileExists",
+    "GetFileLength",
+    "GetFileModTime",
+    "LoadDirectoryFiles",
+    "LoadDroppedFiles",
+    "LoadFileData",
+    "LoadFileText",
+    "LoadModel",
+    "LoadModelAnimations",
+    "LoadMusicStream",
+    "SaveFileData",
+    "SaveFileText",
+    "UnloadModelAnimations",
+    "UnloadMusicStream",
+};

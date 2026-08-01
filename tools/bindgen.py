@@ -1,8 +1,8 @@
-"""Generate bindings from raylib_api.json.
+"""Generate bindings from the raylib and raymath api descriptions.
 
-Usage: bindgen.py <raylib directory | raylib_api.json>
+Usage: bindgen.py <directory holding raylib_api.json and raymath_api.json>
 
-Writes src/raylib_bind.hpp, src/raylib_bind.cpp and types/raylib.d.luau.
+Writes src/bind/raylib_bind.hpp, src/bind/raylib_bind.cpp and types/raylib.d.luau.
 """
 
 import json
@@ -18,12 +18,24 @@ ROOT = Path(__file__).resolve().parent.parent
 HOST_FUNCTIONS = {
     "LoadFileText": ("(fileName: string) -> string", "Read a text file through the virtual filesystem"),
     "LoadFileData": ("(fileName: string) -> buffer", "Read a binary file through the virtual filesystem"),
+    "SaveFileText": ("(fileName: string, text: string) -> boolean", "Write a text file, creating parent directories"),
+    "SaveFileData": ("(fileName: string, data: buffer) -> boolean", "Write a binary file, creating parent directories"),
+    "GetFileModTime": ("(fileName: string) -> number", "Modification time of a file in the virtual filesystem"),
+    "FileExists": ("(fileName: string) -> boolean", "Check a file in the virtual filesystem, loose files and the pak"),
+    "DirectoryExists": ("(dirPath: string) -> boolean", "Check a directory in the virtual filesystem, loose files and the pak"),
+    "GetFileLength": ("(fileName: string) -> number", "Byte length of a file in the virtual filesystem"),
+    "LoadDirectoryFiles": ("(dirPath: string, recursive: boolean?) -> {string}", "List files in a directory, loose files and the pak"),
+    "LoadDroppedFiles": ("() -> {string}", "Paths of the files dropped onto the window"),
     "LoadMusicStream": ("(fileName: string) -> Music", "Load music through the virtual filesystem"),
     "UnloadMusicStream": ("(music: Music) -> ()", "Unload music and release its streaming buffer"),
+    "LoadModel": ("(fileName: string) -> Model", "Load a model through the virtual filesystem"),
+    "LoadModelAnimations": ("(fileName: string) -> {ModelAnimation}", "Load model animations through the virtual filesystem"),
+    "UnloadModelAnimations": ("(animations: {ModelAnimation} | ModelAnimation) -> ()", "Unload one animation or a table of them"),
 }
 
-# API semantics that signatures cannot express. Verify each entry on a raylib bump.
-HAND_CLASSIFIED = {
+# raylib semantics a signature cannot express, so each name carries its reason.
+# verify these on a raylib bump
+DENIED = {
     "UnloadFileText": "the host returns strings, which Luau collects",
     "UnloadFileData": "the host returns buffers, which Luau collects",
     # rcore.c retains this pointer and dereferences it in later frames
@@ -33,27 +45,23 @@ HAND_CLASSIFIED = {
     "UnloadSoundAlias": "consumes a handle borrowing another handle's allocation",
     # LoadModelFromMesh shallow-copies Mesh, so both values own its buffers
     "LoadModelFromMesh": "takes ownership of its argument's buffers",
-    # rmodels.c writes maps[mapType] with no bounds check at all
-    "SetMaterialTexture": "unchecked index writes out of bounds",
-    # rmodels.c checks only upper bounds, so a negative index writes before the array
-    "SetModelMeshMaterial": "unchecked index writes out of bounds",
-    # rmodels.c wraps only frames above the count, so a negative frame reads out of bounds
-    "UpdateModelAnimation": "unchecked frame reads out of bounds",
-    "UpdateModelAnimationEx": "unchecked frame reads out of bounds",
     # rshapes.c returns the internal texShapes, which defaults to rlgl's white 1x1
     # texture at GL id 1, and UnloadTexture unloads any positive id. Unlike
     # rt.texture, whose getter is needed to draw a render target, nothing in a
     # script needs this one, SetShapesTexture is the half that is useful
     "GetShapesTexture": "borrows raylib's internal texture, unloading it breaks the renderer",
-    # rtextures.c sizes the new buffer from the requested dimensions with no check,
-    # so the int multiply overflows before the copy loops run. ImageResizeNN also
-    # divides by newWidth. The rest of the Image family clamps, these three do not.
-    "ImageResize": "unvalidated target size overflows the allocation",
-    "ImageResizeNN": "unvalidated target size overflows the allocation",
-    "ImageResizeCanvas": "unvalidated target size overflows the allocation",
-    # raudio.c allocates frameCount*channels*(sampleSize/8) but any sampleSize that
-    # is not 8 or 16 converts as f32, so 24 allocates 3 bytes per sample for 4
-    "WaveFormat": "sampleSize disagrees with the conversion format and undersizes the buffer",
+    # a FilePathList keeps its names in a char ** no script can reach, so the
+    # host returns them as a table and these have nothing left to hand over
+    "LoadDirectoryFilesEx": "use LoadDirectoryFiles, it takes a recursive flag",
+    # the report would otherwise describe these from the signature alone, and
+    # the signature is misleading in each case
+    "ComputeCRC32": "hashes a counted input buffer, not an out parameter",
+    "ComputeMD5": "returns a static internal array, no ownership to describe",
+    "ComputeSHA1": "returns a static internal array, no ownership to describe",
+    "ComputeSHA256": "returns a static internal array, no ownership to describe",
+    "UnloadRandomSequence": "no supported function yields a random sequence",
+    "UnloadDirectoryFiles": "the host returns tables, which Luau collects",
+    "UnloadDroppedFiles": "the host returns tables, which Luau collects",
 }
 
 # The only handle-typed field a script can read. Drawing a render target needs
@@ -66,25 +74,21 @@ BORROWED_FIELDS = {("RenderTexture", "texture")}
 # generated Scope enum order
 SCOPES = ["Drawing", "TextureMode", "Mode2D", "Mode3D", "ShaderMode", "BlendMode", "ScissorMode", "VrStereoMode"]
 
-# C cannot say whether a writable struct pointer is one object or an array, so
-# accepting one is a reviewed decision per function. Anything absent from this set
-# is reported instead of bound. On a bump, new pointer functions appear in the
-# report until they are audited and added here
-IN_PLACE_MUTATORS = {
-    "GenMeshTangents", "GenTextureMipmaps", "ImageAlphaClear", "ImageAlphaCrop", "ImageAlphaMask",
-    "ImageAlphaPremultiply", "ImageBlurGaussian", "ImageClearBackground", "ImageColorBrightness",
-    "ImageColorContrast", "ImageColorGrayscale", "ImageColorInvert", "ImageColorReplace",
-    "ImageColorTint", "ImageCrop", "ImageDither", "ImageDraw", "ImageDrawCircle",
-    "ImageDrawCircleLines", "ImageDrawCircleLinesV", "ImageDrawCircleV", "ImageDrawLine",
-    "ImageDrawLineEx", "ImageDrawLineV", "ImageDrawPixel", "ImageDrawPixelV", "ImageDrawRectangle",
-    "ImageDrawRectangleLines", "ImageDrawRectangleRec", "ImageDrawRectangleV", "ImageDrawText",
-    "ImageDrawTextEx", "ImageDrawTriangle", "ImageDrawTriangleEx", "ImageDrawTriangleLines",
-    "ImageFlipHorizontal", "ImageFlipVertical", "ImageFormat", "ImageMipmaps", "ImageRotate",
-    "ImageRotateCCW", "ImageRotateCW", "ImageToPOT", "UpdateCamera", "UpdateCameraPro",
-    "UploadMesh", "WaveCrop",
+# bound through a hand written adapter in src/bind/rl_adapters.hpp because C
+# passes the value as a pointer and a script has none, so the adapter is the
+# only place the size can be rebuilt. the value is (reason, Luau signature)
+ADAPTED = {
+    "SetShaderValue": (
+        "the value size is implied by uniformType",
+        "(shader: Shader, locIndex: number, value: number | vector | Vector4 | buffer, uniformType: number) -> ()",
+    ),
+    "UpdateTexture": (
+        "the pixel buffer size is implied by the texture",
+        "(texture: Texture, pixels: buffer) -> ()",
+    ),
 }
 
-# mapped onto native Luau values in src/rl_types.hpp
+# mapped onto native Luau values in src/bind/rl_types.hpp
 NATIVE_STRUCTS = {"Vector2": "vector", "Vector3": "vector", "Color": "number"}
 
 SCALARS = {
@@ -95,6 +99,10 @@ SCALARS = {
 # a matching adjacent count name labels the report reason as "array"
 COUNT_NAME = re.compile(r"^(count|instances|len|length|.*Count)$")
 
+# raymath helper types, only ever returned by the *ToFloatV functions the
+# classifier already rejects
+SKIPPED_STRUCTS = {"float3", "float16"}
+
 # Luau keywords, which cannot be parameter names in the definitions file
 KEYWORDS = {
     "and", "break", "continue", "do", "else", "elseif", "end", "export", "false", "for",
@@ -103,11 +111,28 @@ KEYWORDS = {
 }
 
 
-def load_api(arg: Path) -> dict:
-    path = arg if arg.is_file() else arg / "raylib_api.json"
-    if not path.exists():
-        sys.exit(f"raylib_api.json not found at {path}")
+def load_api(directory: Path) -> dict:
+    """raylib.h and raymath.h, parsed by rlparser into one api description."""
+    api = read_json(directory / "raylib_api.json")
+    merge(api, read_json(directory / "raymath_api.json"))
+    return api
+
+
+def read_json(path: Path) -> dict:
+    if not path.is_file():
+        sys.exit(f"{path.name} not found at {path}, run ./build.sh bindgen")
     return json.loads(sanitize(path.read_text()))
+
+
+def merge(api: dict, extra: dict) -> None:
+    """Add what the second header brings, keeping raylib.h's copy of anything shared.
+
+    raymath re-declares the vector structs, the Quaternion alias and PI, and
+    defines no function raylib.h already has.
+    """
+    for section, entries in extra.items():
+        seen = {entry["name"] for entry in api.get(section, [])}
+        api.setdefault(section, []).extend(e for e in entries if e["name"] not in seen)
 
 
 def sanitize(text: str) -> str:
@@ -131,6 +156,7 @@ class Type:
             text = text[6:]
         self.ptr = text.count("*")
         base = text.replace("*", "").strip()
+        self.alias = base  # the spelling raylib uses here, Quaternion rather than Vector4
         while base in aliases:
             base, extra = aliases[base]
             self.ptr += extra
@@ -150,11 +176,15 @@ class Api:
                 self.aliases[a["name"][1:]] = (a["type"], 1)
             else:
                 self.aliases[a["name"]] = (a["type"], 0)
-        self.structs = {s["name"]: s for s in api["structs"]}
+        self.structs = {s["name"]: s for s in api["structs"] if s["name"] not in SKIPPED_STRUCTS}
         self.callbacks = {c["name"] for c in api["callbacks"]}
         self.userdata = [name for name in self.structs if name not in NATIVE_STRUCTS]
         self.tag = {name: i + 1 for i, name in enumerate(self.userdata)}  # tag 0 is plain userdata
         self.owns = self._ownership()
+        # aliases the definitions file declares, so a signature may name them
+        self.exported_aliases = {
+            a["name"] for a in api["aliases"] if not a["name"].startswith("*") and self.is_userdata(a["type"])
+        }
 
     def parse(self, raw: str) -> Type:
         return Type(raw, self.aliases)
@@ -204,12 +234,20 @@ class Api:
 
 
 def classify(api: Api, fn: dict) -> tuple[str, str]:
-    """-> (plain | unload | scope | host | unsupported, reason)"""
+    """-> (plain | unload | scope | adapted | host | unsupported, reason)
+
+    Structural rules decide everything a signature can answer. The tables above
+    hold only what it cannot: what raylib's own semantics make unbindable, and
+    the two calls whose value size C carries in a pointer. raylib keeps its own
+    parameter contracts, so a call that is wrong in C is wrong here the same way.
+    """
     name = fn["name"]
     if name in HOST_FUNCTIONS:
         return "host", ""
-    if name in HAND_CLASSIFIED:
-        return "unsupported", HAND_CLASSIFIED[name]
+    if name in DENIED:
+        return "unsupported", DENIED[name]
+    if name in ADAPTED:
+        return "adapted", ADAPTED[name][0]
 
     params = fn.get("params", [])
     for p in params:
@@ -235,13 +273,14 @@ def classify(api: Api, fn: dict) -> tuple[str, str]:
             continue  # const char * arguments map to strings
         if t.base in ("void", "char"):
             return "unsupported", f"raw {t} buffer parameter"
+        nxt = params[i + 1] if i + 1 < len(params) else None
+        counted = nxt and api.parse(nxt["type"]).base in SCALARS and COUNT_NAME.match(nxt.get("name", ""))
         if not api.is_userdata(t.base) or t.const or t.ptr > 1:
-            nxt = params[i + 1] if i + 1 < len(params) else None
-            counted = nxt and api.parse(nxt["type"]).base in SCALARS and COUNT_NAME.match(nxt.get("name", ""))
             return "unsupported", f"{t} {'array' if counted or t.const else 'out parameter'}"
-        # reviewed mutators may borrow one writable userdata pointer for this call
-        if name not in IN_PLACE_MUTATORS:
-            return "unsupported", f"{t} is not a reviewed in-place mutator"
+        # a lone writable userdata pointer is an in-place mutator, one adjacent
+        # count means it is an array instead and C cannot tell the two apart
+        if counted:
+            return "unsupported", f"{t} array"
 
     for scope in SCOPES:
         if name in (f"Begin{scope}", f"End{scope}"):
@@ -275,6 +314,9 @@ def lua_type(api: Api, t: Type) -> str:
         return "boolean"
     if t.base in SCALARS:
         return "number"
+    # signatures read as raylib writes them, the alias is exported as its target
+    if t.alias in api.exported_aliases:
+        return t.alias
     return NATIVE_STRUCTS.get(t.base, t.base)
 
 
@@ -346,7 +388,7 @@ GENERATED = "// generated by tools/bindgen.py from raylib {version}, do not edit
 
 def emit_header(api: Api, version: str) -> str:
     out = [GENERATED.format(version=version), "// run ./build.sh bindgen after a raylib bump\n#pragma once\n\n"]
-    out.append('#include "bind.hpp"\n#include "raylib.h"\n\nnamespace bind {\n\n')
+    out.append('#include "bind/bind.hpp"\n#include "raylib.h"\n\nnamespace bind {\n\n')
     for name in api.userdata:
         out.append(
             f"template <> struct UdTraits<{name}> {{\n"
@@ -359,11 +401,23 @@ def emit_header(api: Api, version: str) -> str:
     out.append("static_assert(kRaylibTagCount < kReleasedTag, \"raylib tags collide with the released tag\");\n")
     out.append("\n}  // namespace bind\n\n")
     out.append("// Creates the raylib global and userdata metatables for this VM.\nvoid OpenRaylib(lua_State *L);\n")
+    out.append(
+        "\n// names the definitions file promises, installed by src/vfs.cpp. the host\n"
+        "// checks them after OpenLoaders so a missing one cannot reach a script as nil\n"
+        f"inline constexpr const char *kHostFunctions[] = {{\n"
+        + "".join(f'    "{n}",\n' for n in sorted(HOST_FUNCTIONS))
+        + "};\n"
+    )
     return "".join(out)
 
 
 def emit_source(api: Api, bound: list[tuple[dict, str]], unsupported: list[tuple[str, str]], version: str) -> str:
-    out = [GENERATED.format(version=version), '\n#include "raylib_bind.hpp"\n\n#include "rl_adapters.hpp"\n#include "rl_types.hpp"\n\n']
+    out = [
+        GENERATED.format(version=version),
+        '\n#include "bind/raylib_bind.hpp"\n\n#include "bind/rl_adapters.hpp"\n#include "bind/rl_types.hpp"\n\n',
+        # raymath is header only, this keeps its definitions inside this one unit
+        '#define RAYMATH_STATIC_INLINE\n#include "raymath.h"\n\n',
+    ]
     out.append("namespace {\n\nusing bind::Field;\nusing bind::FieldDef;\nusing bind::TypeInfo;\n")
 
     for name in api.userdata:
@@ -389,6 +443,8 @@ def emit_source(api: Api, bound: list[tuple[dict, str]], unsupported: list[tuple
             scope = next(s for s in SCOPES if name in (f"Begin{s}", f"End{s}"))
             macro = "BIND_SCOPE_BEGIN" if name.startswith("Begin") else "BIND_SCOPE_END"
             out.append(f'    {{"{name}", {macro}({name}, {scope})}},\n')
+        elif kind == "adapted":
+            out.append(f'    {{"{name}", &adapt::{name}}},\n')
         else:
             out.append(f'    {{"{name}", {"BIND_UNLOAD" if kind == "unload" else "BIND_FN"}({name})}},\n')
     out.append("};\n")
@@ -433,7 +489,7 @@ void OpenRaylib(lua_State *L) {{
 
     out.append(
         f"\n// Not bound: {len(unsupported)} of {len(api.raw['functions'])} raylib functions.\n"
-        f"// Each needs an adapter that owns the lifetime the C signature leaves implicit.\n//\n"
+        f"// Each entry records why it is not exposed.\n//\n"
     )
     width = max(len(n) for n, _ in unsupported)
     out.extend(f"//   {n:<{width}}  {r}\n" for n, r in unsupported)
@@ -457,15 +513,18 @@ def emit_defs(api: Api, bound: list[tuple[dict, str]], version: str) -> str:
 
     # only exported aliases enter a definition file's global type namespace
     for a in api.raw["aliases"]:
-        if not a["name"].startswith("*") and api.is_userdata(a["type"]):
+        if a["name"] in api.exported_aliases:
             out.append(f"export type {a['name']} = {a['type']}\n")
     out.append("\ndeclare DEV: boolean\n\ndeclare raylib: {\n")
 
-    for fn, _ in bound:
-        params = ", ".join(f"{param_name(p, i)}: {lua_type(api, api.parse(p['type']))}"
-                           for i, p in enumerate(fn.get("params", [])))
+    for fn, kind in bound:
+        override = ADAPTED[fn["name"]][1] if kind == "adapted" else None
+        if override is None:
+            params = ", ".join(f"{param_name(p, i)}: {lua_type(api, api.parse(p['type']))}"
+                               for i, p in enumerate(fn.get("params", [])))
+            override = f"({params}) -> {lua_type(api, api.parse(fn['returnType']))}"
         out.append(doc("    ", describe(fn.get("description"))))
-        out.append(f"    {fn['name']}: ({params}) -> {lua_type(api, api.parse(fn['returnType']))},\n")
+        out.append(f"    {fn['name']}: {override},\n")
 
     out.append("\n    Vector2: (x: number?, y: number?) -> vector,\n")
     out.append("    Vector3: (x: number?, y: number?, z: number?) -> vector,\n")
@@ -485,8 +544,7 @@ def emit_defs(api: Api, bound: list[tuple[dict, str]], version: str) -> str:
 
 def check_tables(names: set[str]) -> None:
     """Fail on a table entry raylib no longer has, so a rename cannot go unnoticed."""
-    for table, entries in (("HOST_FUNCTIONS", HOST_FUNCTIONS), ("HAND_CLASSIFIED", HAND_CLASSIFIED),
-                           ("IN_PLACE_MUTATORS", IN_PLACE_MUTATORS)):
+    for table, entries in (("HOST_FUNCTIONS", HOST_FUNCTIONS), ("DENIED", DENIED), ("ADAPTED", ADAPTED)):
         for stale in sorted(set(entries) - names):
             sys.exit(f"{table} names {stale}, which this raylib version does not define")
 
@@ -509,8 +567,8 @@ def main() -> None:
         else:
             bound.append((fn, kind))
 
-    (ROOT / "src" / "raylib_bind.hpp").write_text(emit_header(api, version))
-    (ROOT / "src" / "raylib_bind.cpp").write_text(emit_source(api, bound, unsupported, version))
+    (ROOT / "src" / "bind" / "raylib_bind.hpp").write_text(emit_header(api, version))
+    (ROOT / "src" / "bind" / "raylib_bind.cpp").write_text(emit_source(api, bound, unsupported, version))
     defs = emit_defs(api, bound, version)
     host = "".join(doc("    ", d) + f"    {n}: {sig},\n" for n, (sig, d) in sorted(HOST_FUNCTIONS.items()))
     (ROOT / "types" / "raylib.d.luau").write_text(defs.replace("\n    Vector2:", f"\n{host}\n    Vector2:", 1))
@@ -518,7 +576,7 @@ def main() -> None:
     adapted = sum(1 for _, k in bound if k != "plain")
     print(f"raylib {version}: {len(bound)} functions bound ({adapted} adapted), {len(hosted)} host provided,")
     print(f"  {len(api.userdata)} userdata types, {len(unsupported)} unsupported")
-    print("  see the report at the bottom of src/raylib_bind.cpp")
+    print("  see the report at the bottom of src/bind/raylib_bind.cpp")
 
 
 if __name__ == "__main__":

@@ -28,11 +28,9 @@ end
 -- reload hooks, delete them to get a fresh boot on every reload
 function before_reload()
     rl.UnloadTexture(sprite) -- reloads never free GPU resources
-    return string.format("%f %f %f %f", pos.x, pos.y, vel.x, vel.y)
+    return { pos = pos, vel = vel }
 end
 
 function after_reload(state)
-    local n = {}
-    for f in string.gmatch(state, "%S+") do n[#n + 1] = tonumber(f) end
-    pos, vel = vector.create(n[1], n[2], 0), vector.create(n[3], n[4], 0)
+    pos, vel = state.pos, state.vel
 end

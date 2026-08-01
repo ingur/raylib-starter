@@ -34,7 +34,7 @@ bool booted;
 bool quit;
 bool devMode;
 bool watch;
-std::string reloadState;
+ScriptState reloadState;
 bool retained;  // reloadState is waiting for an after_reload that accepts it
 
 int CfgInt(lua_State *L, int table, const char *key, int fallback) {
@@ -122,14 +122,16 @@ void Reload() {
     if (booted) {
         bool missing = false;
         if (script.CallGlobal("before_reload", &missing)) {
-            const char *state = script.LastResultString();
-            if (state != nullptr) {
+            ScriptState state;
+            if (script.TakeResultState(state)) {
                 if (!retained) {  // keep retained state until it applies
-                    reloadState = state;
+                    reloadState = std::move(state);
                     retained = true;
                 }
+            } else if (script.StateError()[0] != '\0') {
+                TraceLog(LOG_WARNING, "SCRIPT: before_reload state not saved, %s", script.StateError());
             } else if (!script.LastResultNil()) {
-                TraceLog(LOG_WARNING, "SCRIPT: before_reload state must be a string, ignored");
+                TraceLog(LOG_WARNING, "SCRIPT: before_reload state must be a table, ignored");
             }
         } else if (!missing) {
             TraceLog(LOG_WARNING, "SCRIPT: before_reload failed");
@@ -144,8 +146,8 @@ void Reload() {
 
     if (scriptOk && retained) {
         bool missing = false;
-        if (script.CallGlobalStr("after_reload", reloadState.c_str(), &missing) || missing) {
-            reloadState.clear();
+        if (script.CallGlobalTable("after_reload", reloadState, &missing) || missing) {
+            reloadState = ScriptState{};
             retained = false;
         } else {
             scriptOk = false;  // state is kept for the next successful boot
@@ -291,7 +293,7 @@ int main(void) {
 #endif
     vfs::Mount();
 #if !defined(__EMSCRIPTEN__)
-    MakeDirectory("save");  // writable save dir, on web an IDBFS mount (src/web_save.js)
+    MakeDirectory("save");  // writable save dir, on web an IDBFS mount (src/web/save.js)
 #endif
 #if !defined(NDEBUG)
     devMode = true;  // debug builds get the DEV global
