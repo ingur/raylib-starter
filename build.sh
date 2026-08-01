@@ -29,7 +29,7 @@ run() {
 }
 
 dev() {
-    export WATCH=1  # hot reload, see WatchFiles in src/main.c
+    export WATCH=1  # hot reload, see WatchFiles in src/main.cpp
     zig build run -Doptimize=Debug -Dtarget=$TARGET
 }
 
@@ -83,7 +83,7 @@ show_help() {
     echo "  windows   Build the windows target [debug|release]"
     echo "  web       Build the web target"
     echo "  dist      Package release zips for all platforms into dist/"
-    echo "  bindgen   Regenerate the python bindings and type stubs"
+    echo "  bindgen   Regenerate the raylib bindings and Luau type definitions"
     echo "  clean     Clean build environment"
     echo "  help      Show this help message"
     echo ""

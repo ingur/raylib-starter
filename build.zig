@@ -7,20 +7,34 @@ const name = "game";
 // Packed assets file name. The pak is a plain zip.
 const assets_pak = "assets.pak";
 
-const pk_defines = [_][2][]const u8{
-    .{ "PK_ENABLE_OS", "1" },
-    .{ "PK_ENABLE_THREADS", "0" },
-    .{ "PK_ENABLE_DETERMINISM", "1" },
-    .{ "PK_ENABLE_WATCHDOG", "0" },
-    .{ "PK_ENABLE_CUSTOM_SNAME", "0" },
-    .{ "PK_ENABLE_MIMALLOC", "0" },
-};
+// raylib and miniz stay C, our host and luau are C++17.
+// -ffp-contract=off everywhere so float results do not drift between targets.
+const cflags = [_][]const u8{ "-std=gnu11", "-ffp-contract=off" };
+const cxxflags = [_][]const u8{ "-std=c++17", "-ffp-contract=off" };
 
-// pocketpy relies on implementation defined pointer casts
-const cflags = [_][]const u8{ "-std=gnu11", "-fno-sanitize=undefined" };
+// luau's VM assumes math functions never touch errno
+const vm_cxxflags = cxxflags ++ [_][]const u8{"-fno-math-errno"};
 
 // miniz's source tarball has no amalgamation, compile the same list as upstream
 const miniz_srcs = [_][]const u8{ "miniz.c", "miniz_zip.c", "miniz_tinfl.c", "miniz_tdef.c" };
+
+// luau ships cmake only, so its libraries are compiled here as plain source lists.
+// Analysis/, Config/, Require/, Inliner/ and the CLI are not embedded.
+// Luau.Common stopped being header only in 0.732: format/vformat/formatAppend
+// live in Common/src/StringUtils.cpp and the Ast, Bytecode and CodeGen libraries
+// all link against them.
+const luau_src_dirs = [_][]const u8{ "Common/src", "Ast/src", "Bytecode/src", "Compiler/src" };
+const luau_includes = [_][]const u8{
+    "Common/include",
+    "Ast/include",
+    "Bytecode/include",
+    "Compiler/include",
+    "VM/include",
+    "VM/src",
+};
+
+// the jit is x64/A64 only, the web build compiles none of it
+const luau_codegen_includes = [_][]const u8{ "CodeGen/include", "CodeGen/src" };
 
 pub fn build(b: *std.Build) !void {
     // `zig build web -Dweb` skips the native graph and its system libraries
@@ -35,24 +49,36 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
         .linux_display_backend = raylib_zig.LinuxDisplayBackend.Both,
     });
-    const pocketpy_dep = b.dependency("pocketpy", .{});
     const miniz_dep = b.dependency("miniz", .{});
+    const luau_dep = b.dependency("luau", .{});
 
-    const game_srcs = try findCSources(b, b.pathFromRoot("."), "src");
-    const pk_srcs = try findCSources(b, pocketpy_dep.builder.pathFromRoot("."), "src");
+    const luau_root = luau_dep.builder.pathFromRoot(".");
+    const game_srcs = try findCSources(b, b.pathFromRoot("."), &.{"src"});
+    const luau_srcs = try findCSources(b, luau_root, &luau_src_dirs);
+    const luau_vm_srcs = try findCSources(b, luau_root, &.{"VM/src"});
+    const luau_codegen_srcs = try findCSources(b, luau_root, &.{"CodeGen/src"});
 
     if (!web_only) try native(b, .{
         .target = target,
         .optimize = optimize,
         .ndebug = ndebug,
         .raylib_dep = raylib_dep,
-        .pocketpy_dep = pocketpy_dep,
         .miniz_dep = miniz_dep,
+        .luau_dep = luau_dep,
         .game_srcs = game_srcs,
-        .pk_srcs = pk_srcs,
+        .luau_srcs = luau_srcs,
+        .luau_vm_srcs = luau_vm_srcs,
+        .luau_codegen_srcs = luau_codegen_srcs,
     });
 
-    try web(b, raylib_dep, pocketpy_dep, miniz_dep, game_srcs, pk_srcs);
+    try web(b, .{
+        .raylib_dep = raylib_dep,
+        .miniz_dep = miniz_dep,
+        .luau_dep = luau_dep,
+        .game_srcs = game_srcs,
+        .luau_srcs = luau_srcs,
+        .luau_vm_srcs = luau_vm_srcs,
+    });
 
     // the raylib package omits its parser output, fetch the pinned one
     const fetch_api = b.addSystemCommand(&.{ "curl", "-fsSL", b.fmt(
@@ -60,26 +86,26 @@ pub fn build(b: *std.Build) !void {
         .{raylibTag()},
     ), "-o" });
     const api_dir = b.addWriteFiles();
-    _ = api_dir.addCopyFile(
-        fetch_api.addOutputFileArg("raylib_api.json"),
-        "tools/rlparser/output/raylib_api.json",
-    );
+    _ = api_dir.addCopyFile(fetch_api.addOutputFileArg("raylib_api.json"), "raylib_api.json");
 
     const bindgen = b.addSystemCommand(&.{ "python3", "tools/bindgen.py" });
     bindgen.addDirectoryArg(api_dir.getDirectory());
-    bindgen.addDirectoryArg(pocketpy_dep.path(""));
     bindgen.setCwd(b.path(""));
     bindgen.has_side_effects = true;
-    b.step("bindgen", "Regenerate the python bindings and type stubs").dependOn(&bindgen.step);
+    b.step("bindgen", "Regenerate the raylib bindings and Luau type definitions")
+        .dependOn(&bindgen.step);
 
     // clangd reads the generated compile_flags.txt
-    const editor_flags = b.addUpdateSourceFiles();
-    editor_flags.addBytesToSource(b.fmt("-Isrc\n-I{s}\n-I{s}\n-I{s}\n-DASSETS_PAK=\"{s}\"\n", .{
+    var flags: []const u8 = b.fmt("-xc++\n-std=c++17\n-Isrc\n-I{s}\n-I{s}\n", .{
         raylib_dep.builder.pathFromRoot("src"),
-        pocketpy_dep.builder.pathFromRoot("include"),
         miniz_dep.builder.pathFromRoot("."),
-        assets_pak,
-    }), "compile_flags.txt");
+    });
+    for (luau_includes ++ luau_codegen_includes) |inc|
+        flags = b.fmt("{s}-I{s}\n", .{ flags, luau_dep.builder.pathFromRoot(inc) });
+    flags = b.fmt("{s}-DASSETS_PAK=\"{s}\"\n-DGAME_CODEGEN=1\n", .{ flags, assets_pak });
+
+    const editor_flags = b.addUpdateSourceFiles();
+    editor_flags.addBytesToSource(flags, "compile_flags.txt");
     b.getInstallStep().dependOn(&editor_flags.step);
 }
 
@@ -88,10 +114,12 @@ const NativeOptions = struct {
     optimize: std.builtin.OptimizeMode,
     ndebug: bool,
     raylib_dep: *std.Build.Dependency,
-    pocketpy_dep: *std.Build.Dependency,
     miniz_dep: *std.Build.Dependency,
+    luau_dep: *std.Build.Dependency,
     game_srcs: []const []const u8,
-    pk_srcs: []const []const u8,
+    luau_srcs: []const []const u8,
+    luau_vm_srcs: []const []const u8,
+    luau_codegen_srcs: []const []const u8,
 };
 
 fn native(b: *std.Build, opts: NativeOptions) !void {
@@ -146,45 +174,42 @@ fn native(b: *std.Build, opts: NativeOptions) !void {
         try raylib.root_module.link_objects.appendSlice(b.allocator, kept.items);
     }
 
-    const pk_mod = b.createModule(.{
+    const luau_mod = b.createModule(.{
         .target = opts.target,
         .optimize = opts.optimize,
         .link_libc = true,
+        .link_libcpp = true,
     });
-    pk_mod.addIncludePath(opts.pocketpy_dep.path("include"));
-    for (pk_defines) |d| pk_mod.addCMacro(d[0], d[1]);
-    pk_mod.addCSourceFiles(.{
-        .root = opts.pocketpy_dep.path(""),
-        .files = opts.pk_srcs,
-        .flags = &cflags,
-    });
-    if (is_windows) {
-        // upstream includes <WinSock2.h>, zig's bundled mingw headers are lowercase
-        const shim = b.addWriteFiles();
-        pk_mod.addIncludePath(shim.add("WinSock2.h", "#include <winsock2.h>\n").dirname());
-        pk_mod.linkSystemLibrary("ws2_32", .{});
-    }
-    const pocketpy = b.addLibrary(.{
-        .name = "pocketpy",
+    for (luau_includes ++ luau_codegen_includes) |inc|
+        luau_mod.addIncludePath(opts.luau_dep.path(inc));
+    const luau_path = opts.luau_dep.path("");
+    luau_mod.addCSourceFiles(.{ .root = luau_path, .files = opts.luau_srcs, .flags = &cxxflags });
+    luau_mod.addCSourceFiles(.{ .root = luau_path, .files = opts.luau_vm_srcs, .flags = &vm_cxxflags });
+    luau_mod.addCSourceFiles(.{ .root = luau_path, .files = opts.luau_codegen_srcs, .flags = &cxxflags });
+    const luau = b.addLibrary(.{
+        .name = "luau",
         .linkage = .static,
-        .root_module = pk_mod,
+        .root_module = luau_mod,
     });
 
     const exe_mod = b.createModule(.{
         .target = opts.target,
         .optimize = opts.optimize,
         .link_libc = true,
+        .link_libcpp = true,
         .strip = opts.ndebug,
     });
-    exe_mod.addCSourceFiles(.{ .files = opts.game_srcs, .flags = &cflags });
+    exe_mod.addCSourceFiles(.{ .files = opts.game_srcs, .flags = &cxxflags });
     exe_mod.addCSourceFiles(.{ .root = opts.miniz_dep.path(""), .files = &miniz_srcs, .flags = &cflags });
     exe_mod.addIncludePath(opts.miniz_dep.path(""));
     exe_mod.addIncludePath(b.path("src"));
-    exe_mod.addIncludePath(opts.pocketpy_dep.path("include"));
+    for (luau_includes ++ luau_codegen_includes) |inc|
+        exe_mod.addIncludePath(opts.luau_dep.path(inc));
     exe_mod.addIncludePath(opts.raylib_dep.path("src"));
     exe_mod.addCMacro("ASSETS_PAK", "\"" ++ assets_pak ++ "\"");
+    exe_mod.addCMacro("GAME_CODEGEN", "1");
     exe_mod.linkLibrary(raylib);
-    exe_mod.linkLibrary(pocketpy);
+    exe_mod.linkLibrary(luau);
     for (lib_dirs.items) |d| exe_mod.addLibraryPath(.{ .cwd_relative = d });
     for (sys_libs.items) |sl| exe_mod.linkSystemLibrary(sl.name, .{
         .needed = sl.needed,
@@ -213,43 +238,56 @@ fn native(b: *std.Build, opts: NativeOptions) !void {
     b.step("run", "Run the game").dependOn(&run_cmd.step);
 }
 
-fn web(
-    b: *std.Build,
+const WebOptions = struct {
     raylib_dep: *std.Build.Dependency,
-    pocketpy_dep: *std.Build.Dependency,
     miniz_dep: *std.Build.Dependency,
+    luau_dep: *std.Build.Dependency,
     game_srcs: []const []const u8,
-    pk_srcs: []const []const u8,
-) !void {
-    var srcs: std.array_list.Managed(std.Build.LazyPath) = .init(b.allocator);
+    luau_srcs: []const []const u8,
+    luau_vm_srcs: []const []const u8,
+};
+
+// a translation unit and whatever it needs on top of the flags its extension implies
+const WebSource = struct {
+    path: std.Build.LazyPath,
+    extra: []const []const u8 = &.{},
+};
+
+fn web(b: *std.Build, opts: WebOptions) !void {
+    var srcs: std.array_list.Managed(WebSource) = .init(b.allocator);
     for ([_][]const u8{
         "src/rcore.c", "src/rshapes.c", "src/rtextures.c",
         "src/rtext.c", "src/rmodels.c", "src/raudio.c",
-    }) |f| try srcs.append(raylib_dep.path(f));
-    for (pk_srcs) |f| try srcs.append(pocketpy_dep.path(f));
-    for (miniz_srcs) |f| try srcs.append(miniz_dep.path(f));
-    for (game_srcs) |f| try srcs.append(b.path(f));
+    }) |f| try srcs.append(.{ .path = opts.raylib_dep.path(f) });
+    for (miniz_srcs) |f| try srcs.append(.{ .path = opts.miniz_dep.path(f) });
+    for (opts.luau_srcs) |f| try srcs.append(.{ .path = opts.luau_dep.path(f) });
+    for (opts.luau_vm_srcs) |f| try srcs.append(.{
+        .path = opts.luau_dep.path(f),
+        .extra = &.{"-fno-math-errno"},
+    });
+    for (opts.game_srcs) |f| try srcs.append(.{ .path = b.path(f) });
 
-    const link = b.addSystemCommand(&.{ "emcc", "-Os" });
+    // luau throws C++ exceptions on error, so wasm EH is needed on objects and the link
+    const link = b.addSystemCommand(&.{ "emcc", "-O3", "-fwasm-exceptions" });
     link.setName("emcc link");
     link.setCwd(b.path(""));
     link.has_side_effects = true;
 
     // per-source objects, cached by zig so rebuilds only touch changed files
     for (srcs.items) |src| {
-        const cc = b.addSystemCommand(&.{ "emcc", "-c", "-Os" });
-        const obj = objectName(b, src);
+        const cc = b.addSystemCommand(&.{ "emcc", "-c", "-O3", "-fwasm-exceptions" });
+        const obj = objectName(b, src.path);
         cc.setName(b.fmt("emcc {s}", .{obj}));
-        cc.addArgs(&cflags);
-        if (src == .dependency) cc.addArg("-w");
-        cc.addArgs(&.{ "-DNDEBUG", "-DPLATFORM_WEB", "-DGRAPHICS_API_OPENGL_ES2" });
-        for (pk_defines) |d| cc.addArg(b.fmt("-D{s}={s}", .{ d[0], d[1] }));
+        cc.addArgs(if (isCpp(src.path)) &cxxflags else &cflags);
+        cc.addArgs(src.extra);
+        if (src.path == .dependency) cc.addArg("-w");
+        cc.addArgs(&.{ "-DNDEBUG", "-DPLATFORM_WEB", "-DGRAPHICS_API_OPENGL_ES3" });
         cc.addArg("-DASSETS_PAK=\"" ++ assets_pak ++ "\"");
-        cc.addPrefixedDirectoryArg("-I", raylib_dep.path("src"));
-        cc.addPrefixedDirectoryArg("-I", pocketpy_dep.path("include"));
-        cc.addPrefixedDirectoryArg("-I", miniz_dep.path(""));
+        cc.addPrefixedDirectoryArg("-I", opts.raylib_dep.path("src"));
+        cc.addPrefixedDirectoryArg("-I", opts.miniz_dep.path(""));
+        for (luau_includes) |inc| cc.addPrefixedDirectoryArg("-I", opts.luau_dep.path(inc));
         cc.addPrefixedDirectoryArg("-I", b.path("src"));
-        cc.addFileArg(src);
+        cc.addFileArg(src.path);
         cc.addArgs(&.{ "-MD", "-MF" });
         _ = cc.addDepFileOutputArg(b.fmt("{s}.d", .{obj}));
         cc.addArg("-o");
@@ -261,6 +299,9 @@ fn web(
         "-sUSE_GLFW=3",
         "-sEXPORTED_RUNTIME_METHODS=ccall",
         "-sALLOW_MEMORY_GROWTH=1",
+        // emcc still defaults MAX_WEBGL_VERSION to 1, GRAPHICS_API_OPENGL_ES3 needs 2
+        "-sMIN_WEBGL_VERSION=2",
+        "-sMAX_WEBGL_VERSION=2",
         "-lidbfs.js",
     });
     link.addArg("--shell-file");
@@ -286,9 +327,9 @@ fn pakStep(b: *std.Build, dir: []const u8) *std.Build.Step.Run {
     return pak;
 }
 
-fn findCSources(b: *std.Build, root: []const u8, sub: []const u8) ![]const []const u8 {
+fn findCSources(b: *std.Build, root: []const u8, subs: []const []const u8) ![]const []const u8 {
     var list: std.array_list.Managed([]const u8) = .init(b.allocator);
-    try walkCSources(b, root, sub, &list);
+    for (subs) |sub| try walkCSources(b, root, sub, &list);
     std.mem.sort([]const u8, list.items, {}, struct {
         fn lt(_: void, lhs: []const u8, rhs: []const u8) bool {
             return std.mem.lessThan(u8, lhs, rhs);
@@ -305,19 +346,28 @@ fn walkCSources(b: *std.Build, root: []const u8, sub: []const u8, list: *std.arr
         const child = b.pathJoin(&.{ sub, entry.name });
         switch (entry.kind) {
             .directory => try walkCSources(b, root, child, list),
-            .file => if (std.mem.endsWith(u8, entry.name, ".c")) try list.append(child),
+            .file => if (std.mem.endsWith(u8, entry.name, ".c") or
+                std.mem.endsWith(u8, entry.name, ".cpp")) try list.append(child),
             else => {},
         }
     }
 }
 
-fn objectName(b: *std.Build, src: std.Build.LazyPath) []const u8 {
-    const rel = switch (src) {
+fn subPath(src: std.Build.LazyPath) []const u8 {
+    return switch (src) {
         .src_path => |p| p.sub_path,
         .dependency => |p| p.sub_path,
         else => unreachable,
     };
-    const obj = b.dupe(rel[0 .. rel.len - 2]);
+}
+
+fn isCpp(src: std.Build.LazyPath) bool {
+    return std.mem.endsWith(u8, subPath(src), ".cpp");
+}
+
+fn objectName(b: *std.Build, src: std.Build.LazyPath) []const u8 {
+    const rel = subPath(src);
+    const obj = b.dupe(rel[0..std.mem.lastIndexOfScalar(u8, rel, '.').?]);
     std.mem.replaceScalar(u8, obj, '/', '_');
     return obj;
 }

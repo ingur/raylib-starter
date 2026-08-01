@@ -1,7 +1,0 @@
-{
-  "include": ["game"],
-  "stubPath": "types",
-  "typeCheckingMode": "standard",
-  "reportMissingModuleSource": "none",
-  "executionEnvironments": [{ "root": "game" }]
-}
