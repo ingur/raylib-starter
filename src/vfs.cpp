@@ -51,8 +51,11 @@ std::optional<std::string> ReadPak(const char *path) {
 }
 
 // raylib owns whatever these hand back and releases it with MemFree, so this is
-// the one place the vfs copies out of its own std::string
+// the one place the vfs copies out of its own std::string.
+// MemAlloc takes an unsigned int while the copy is a size_t, so an asset past
+// that range would wrap the allocation and overflow it.
 unsigned char *CopyOut(const std::string &data) {
+    if (data.size() > static_cast<std::size_t>(UINT_MAX) - 1) return nullptr;
     auto *out = static_cast<unsigned char *>(MemAlloc(static_cast<unsigned int>(data.size() + 1)));
     if (out == nullptr) return nullptr;
     std::memcpy(out, data.data(), data.size());
@@ -145,6 +148,10 @@ extern "C" {
 static unsigned char *LoadData(const char *fileName, int *dataSize) {
     *dataSize = 0;
     std::optional<std::string> data = vfs::Read(fileName);
+    if (data && data->size() > static_cast<std::size_t>(INT_MAX)) {
+        TraceLog(LOG_WARNING, "VFS: [%s] is too large", fileName);
+        return nullptr;
+    }
     if (!data) {
         TraceLog(LOG_WARNING, "VFS: [%s] not found", fileName);
         return nullptr;
