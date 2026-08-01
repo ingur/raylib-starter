@@ -179,6 +179,9 @@ fn native(b: *std.Build, opts: NativeOptions) !void {
     luau_mod.addCSourceFiles(.{ .root = luau_path, .files = opts.luau_srcs, .flags = &cxxflags });
     luau_mod.addCSourceFiles(.{ .root = luau_path, .files = opts.luau_vm_srcs, .flags = &vm_cxxflags });
     luau_mod.addCSourceFiles(.{ .root = luau_path, .files = opts.luau_codegen_srcs, .flags = &cxxflags });
+    // without this Luau keeps every LUAU_ASSERT, including the liveness check on
+    // each value copy in the interpreter
+    if (opts.ndebug) luau_mod.addCMacro("NDEBUG", "1");
     const luau = b.addLibrary(.{
         .name = "luau",
         .linkage = .static,
@@ -201,6 +204,7 @@ fn native(b: *std.Build, opts: NativeOptions) !void {
     exe_mod.addIncludePath(opts.raylib_dep.path("src"));
     exe_mod.addCMacro("ASSETS_PAK", "\"" ++ assets_pak ++ "\"");
     exe_mod.addCMacro("GAME_CODEGEN", "1");
+    if (opts.ndebug) exe_mod.addCMacro("NDEBUG", "1");
     exe_mod.linkLibrary(raylib);
     exe_mod.linkLibrary(luau);
     for (lib_dirs.items) |d| exe_mod.addLibraryPath(.{ .cwd_relative = d });
