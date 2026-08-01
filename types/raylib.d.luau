@@ -93,8 +93,6 @@ declare extern type RenderTexture with
     read id: number
     --- Color buffer attachment texture
     read texture: Texture
-    --- Depth buffer attachment texture
-    read depth: Texture
 end
 
 --- NPatchInfo, n-patch layout info
@@ -133,8 +131,6 @@ declare extern type Font with
     read glyphCount: number
     --- Padding around the glyph characters
     read glyphPadding: number
-    --- Texture atlas containing the glyphs
-    read texture: Texture
 end
 
 --- Camera, defines position/orientation in 3d space
@@ -183,8 +179,6 @@ end
 
 --- MaterialMap
 declare extern type MaterialMap with
-    --- Material map texture
-    read texture: Texture
     --- Material map color
     color: number
     --- Material map value

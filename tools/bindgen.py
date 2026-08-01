@@ -47,6 +47,12 @@ HAND_CLASSIFIED = {
     "GetShapesTexture": "borrows raylib's internal texture, unloading it breaks the renderer",
 }
 
+# The only handle-typed field a script can read. Drawing a render target needs
+# target.texture and raylib offers no function that takes a RenderTexture, so
+# this one field is a documented borrow: safe to read and pass, undefined to
+# unload, exactly as in C raylib.
+BORROWED_FIELDS = {("RenderTexture", "texture")}
+
 # raylib scopes the host unwinds when a script errors mid frame. Order is the
 # generated Scope enum order
 SCOPES = ["Drawing", "TextureMode", "Mode2D", "Mode3D", "ShaderMode", "BlendMode", "ScissorMode", "VrStereoMode"]
@@ -271,16 +277,24 @@ def param_name(param: dict, index: int) -> str:
 def struct_fields(api: Api, name: str) -> list[tuple[str, str]]:
     """Return bindable fields in declaration order.
 
-    Fields that own allocations get no getter or setter. Reading one would copy
-    the owned pointers into a second userdata, and the unload adapter can only
-    release the userdata it is given.
+    A field is dropped, getter included, when its type owns an allocation or is a
+    resource handle. Reading either hands back a second userdata sharing the same
+    resource, and the unload adapter can only release the userdata it is given, so
+    UnloadTexture(GetFontDefault().texture) would delete the default atlas even
+    though UnloadFont guards the font itself.
+
+    BORROWED_FIELDS lists the one field raylib gives no other way to reach.
     """
     out = []
     for f in api.structs[name]["fields"]:
         t = api.parse(f["type"])
         if t.ptr or t.array is not None:
             continue  # raw pointers and fixed arrays are not exposed
-        if api.owns.get(t.base) or api.value_kind(t) is None:
+        if api.value_kind(t) is None:
+            continue
+        if api.owns.get(t.base):
+            continue
+        if api.is_handle(t.base) and (name, f["name"]) not in BORROWED_FIELDS:
             continue
         out.append((f["name"], lua_type(api, t)))
     return out

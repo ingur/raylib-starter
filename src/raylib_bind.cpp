@@ -65,11 +65,10 @@ const FieldDef kFieldsTexture[] = {
 const TypeInfo kTypeTexture = {"Texture", 5, kFieldsTexture, 5};
 
 const FieldDef kFieldsRenderTexture[] = {
-    {"depth", &Field<&RenderTexture::depth>::Get, nullptr},
     {"id", &Field<&RenderTexture::id>::Get, nullptr},
     {"texture", &Field<&RenderTexture::texture>::Get, nullptr},
 };
-const TypeInfo kTypeRenderTexture = {"RenderTexture", 6, kFieldsRenderTexture, 3};
+const TypeInfo kTypeRenderTexture = {"RenderTexture", 6, kFieldsRenderTexture, 2};
 
 const FieldDef kFieldsNPatchInfo[] = {
     {"bottom", &Field<&NPatchInfo::bottom>::Get, &Field<&NPatchInfo::bottom>::Set},
@@ -93,9 +92,8 @@ const FieldDef kFieldsFont[] = {
     {"baseSize", &Field<&Font::baseSize>::Get, nullptr},
     {"glyphCount", &Field<&Font::glyphCount>::Get, nullptr},
     {"glyphPadding", &Field<&Font::glyphPadding>::Get, nullptr},
-    {"texture", &Field<&Font::texture>::Get, nullptr},
 };
-const TypeInfo kTypeFont = {"Font", 9, kFieldsFont, 4};
+const TypeInfo kTypeFont = {"Font", 9, kFieldsFont, 3};
 
 const FieldDef kFieldsCamera3D[] = {
     {"fovy", &Field<&Camera3D::fovy>::Get, &Field<&Camera3D::fovy>::Set},
@@ -129,10 +127,9 @@ const TypeInfo kTypeShader = {"Shader", 13, kFieldsShader, 1};
 
 const FieldDef kFieldsMaterialMap[] = {
     {"color", &Field<&MaterialMap::color>::Get, &Field<&MaterialMap::color>::Set},
-    {"texture", &Field<&MaterialMap::texture>::Get, nullptr},
     {"value", &Field<&MaterialMap::value>::Get, &Field<&MaterialMap::value>::Set},
 };
-const TypeInfo kTypeMaterialMap = {"MaterialMap", 14, kFieldsMaterialMap, 3};
+const TypeInfo kTypeMaterialMap = {"MaterialMap", 14, kFieldsMaterialMap, 2};
 
 const TypeInfo kTypeMaterial = {"Material", 15, nullptr, 0};
 
