@@ -197,8 +197,15 @@ inline int ToStringField(lua_State *L) {
 
 // Installs the shared metatable for one tag. Luau refuses to reassign a tag's
 // metatable, so this runs once per lua_State.
+//
+// luaL_newmetatable rather than lua_createtable because lua_setuserdatametatable
+// stores into a slot the collector only visits when a cycle starts, and it runs
+// no write barrier. Registering while a cycle is already in progress would leave
+// the metatable unmarked and it would be swept out from under the userdata. The
+// registry entry luaL_newmetatable leaves behind keeps it reachable regardless;
+// this is the same pairing Luau's own tagged userdata tests use.
 inline void RegisterType(lua_State *L, const TypeInfo &type) {
-    lua_createtable(L, 0, 4);
+    luaL_newmetatable(L, type.name);
     lua_pushlightuserdata(L, const_cast<TypeInfo *>(&type));
     lua_pushcclosure(L, IndexField, "__index", 1);
     lua_setfield(L, -2, "__index");
@@ -267,3 +274,4 @@ private:
 // raylib declares its functions extern "C"; clang, gcc and msvc all ignore
 // language linkage when matching the function pointer template parameter.
 #define BIND_FN(f) (&::bind::Wrapper<decltype(&f), &f>::Call)
+

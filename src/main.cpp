@@ -320,6 +320,8 @@ int main(void) {
         if (watch) WatchFiles();
         Frame();
     }
+    TraceLog(LOG_WARNING, "PROBE: loop exit shouldClose=%d quit=%d scriptOk=%d booted=%d",
+             (int)WindowShouldClose(), (int)quit, (int)scriptOk, (int)booted);
 #endif
 
     script.Close();
