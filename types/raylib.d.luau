@@ -732,8 +732,6 @@ declare raylib: {
     UpdateCameraPro: (camera: Camera3D, movement: vector, rotation: vector, zoom: number) -> (),
     --- Set texture and rectangle to be used on shapes drawing
     SetShapesTexture: (texture: Texture, source: Rectangle) -> (),
-    --- Get texture that is used for shapes drawing
-    GetShapesTexture: () -> Texture,
     --- Get texture source rectangle that is used for shapes drawing
     GetShapesTextureRectangle: () -> Rectangle,
     --- Draw a pixel using geometry [Can be slow, use with care]

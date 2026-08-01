@@ -473,7 +473,6 @@ const FnDef kFunctions[] = {
     {"UpdateCamera", BIND_FN(UpdateCamera)},
     {"UpdateCameraPro", BIND_FN(UpdateCameraPro)},
     {"SetShapesTexture", BIND_FN(SetShapesTexture)},
-    {"GetShapesTexture", BIND_FN(GetShapesTexture)},
     {"GetShapesTextureRectangle", BIND_FN(GetShapesTextureRectangle)},
     {"DrawPixel", BIND_FN(DrawPixel)},
     {"DrawPixelV", BIND_FN(DrawPixelV)},
@@ -1142,7 +1141,7 @@ void OpenRaylib(lua_State *L) {
     for (const TypeInfo *type : kTypes)
         bind::RegisterType(L, *type);
 
-    lua_createtable(L, 0, 857);
+    lua_createtable(L, 0, 856);
     for (const FnDef &def : kFunctions) {
         lua_pushcfunction(L, def.fn, def.name);
         lua_rawsetfield(L, -2, def.name);
@@ -1158,7 +1157,7 @@ void OpenRaylib(lua_State *L) {
     lua_setglobal(L, "raylib");
 }
 
-// Not bound: 111 of 600 raylib functions.
+// Not bound: 112 of 600 raylib functions.
 // Each needs an adapter that owns the lifetime the C signature leaves implicit.
 //
 //   SetWindowIcons              Image * is not a reviewed in-place mutator
@@ -1189,6 +1188,7 @@ void OpenRaylib(lua_State *L) {
 //   ComputeSHA1                 returns unsigned int *, ownership is not described by the api
 //   ComputeSHA256               returns unsigned int *, ownership is not described by the api
 //   SetAutomationEventList      raylib keeps the pointer past the call
+//   GetShapesTexture            borrows raylib's internal texture, unloading it breaks the renderer
 //   DrawLineStrip               const Vector2 * array
 //   DrawTriangleFan             const Vector2 * array
 //   DrawTriangleStrip           const Vector2 * array

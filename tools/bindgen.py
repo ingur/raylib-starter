@@ -40,6 +40,11 @@ HAND_CLASSIFIED = {
     # rmodels.c wraps only frames above the count, so a negative frame reads out of bounds
     "UpdateModelAnimation": "unchecked frame reads out of bounds",
     "UpdateModelAnimationEx": "unchecked frame reads out of bounds",
+    # rshapes.c returns the internal texShapes, which defaults to rlgl's white 1x1
+    # texture at GL id 1, and UnloadTexture unloads any positive id. Unlike
+    # rt.texture, whose getter is needed to draw a render target, nothing in a
+    # script needs this one, SetShapesTexture is the half that is useful
+    "GetShapesTexture": "borrows raylib's internal texture, unloading it breaks the renderer",
 }
 
 # raylib scopes the host unwinds when a script errors mid frame. Order is the
