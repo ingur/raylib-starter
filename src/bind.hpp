@@ -1,20 +1,10 @@
 #pragma once
-// Generic Luau <-> C++ marshalling.
-//
-// Every conversion rule lives here exactly once. tools/bindgen.py emits
-// registration lists and type traits, never unmarshalling code: a bound raylib
-// function is `bind::Wrapper<decltype(&Fn), &Fn>::Call`, and the compiler grows
-// the argument handling from the signature. Adding a C type means adding one
-// Conv specialisation, not editing 600 call sites.
-//
-// Luau is built in its default error mode, so luaL_error and friends throw a
-// C++ exception that the VM catches at the call boundary. Destructors run.
-// Do not switch the build to LUA_USE_LONGJMP without auditing every adapter.
+// add a Conv specialization to bind a C++ type
 
 #include <cmath>
-#include <cstddef>
 #include <cstring>
 #include <limits>
+#include <new>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -22,35 +12,31 @@
 #include "lua.h"
 #include "lualib.h"
 
+#if LUA_USE_LONGJMP
+#error "bindings and adapters rely on C++ exceptions for error unwinding"
+#endif
+
 namespace bind {
 
-// ---------------------------------------------------------------- conversions
+// unloaded userdata is retagged here so later use fails its own tag check
+inline constexpr int kReleasedTag = LUA_UTAG_LIMIT - 1;
 
-// Single point of truth for one C type. Check() reads argument `narg`, Push()
-// pushes exactly one value. Specialise this, never Wrapper.
 template <typename T, typename Enable = void>
 struct Conv;
 
-// A double -> integral cast is undefined for NaN, infinities and anything past
-// the target range, and unsigned types wrap silently on negatives. Script
-// numbers reach every generated binding, so bound the value first. Fractions
-// truncate toward zero, which is what raylib's int parameters have always done.
-//
-// max() + 1.0 lands exactly on 2^bits for every two's complement width: the
-// addition is either exact or already rounded there, so the half open compare
-// is tight even for 64 bit types where max() itself is not representable.
+// check the range before converting because out of range floating point to
+// integer casts are undefined, kHigh is exclusive because max() may not be
+// representable as double
 template <typename T>
 inline T CheckIntegral(lua_State *L, int narg) {
     constexpr double kLow = static_cast<double>(std::numeric_limits<T>::min());
     constexpr double kHigh = static_cast<double>(std::numeric_limits<T>::max()) + 1.0;
     const double value = std::trunc(luaL_checknumber(L, narg));
-    if (!(value >= kLow && value < kHigh))  // negated so NaN lands here too
+    if (!(value >= kLow && value < kHigh))  // also catches NaN
         luaL_argerror(L, narg, "integer out of range");
     return static_cast<T>(value);
 }
 
-// Integers and enums. Values go out as doubles, which hold every 32 bit
-// integer exactly, so the full unsigned range survives a round trip.
 template <typename T>
 struct Conv<T, std::enable_if_t<std::is_integral_v<T> && !std::is_same_v<T, bool>>> {
     static T Check(lua_State *L, int narg) { return CheckIntegral<T>(L, narg); }
@@ -72,7 +58,7 @@ struct Conv<bool> {
 template <>
 struct Conv<const char *> {
     static const char *Check(lua_State *L, int narg) { return luaL_checkstring(L, narg); }
-    // raylib hands back NULL for out of range queries, nil is the honest mapping
+    // NULL string results map to nil
     static void Push(lua_State *L, const char *value) {
         if (value != nullptr)
             lua_pushstring(L, value);
@@ -81,48 +67,60 @@ struct Conv<const char *> {
     }
 };
 
-// ------------------------------------------------------------ tagged userdata
-
-// Specialised by the generated bindings, once per raylib struct that is not
-// mapped onto a native Luau type. Tags start at 1; tag 0 belongs to plain
-// lua_newuserdata.
+// generated once for each userdata type, tag 0 is reserved for plain userdata
 template <typename T>
 struct UdTraits {
     static constexpr bool kBound = false;
 };
 
+// runs only while an error is already being raised, so it can afford a lookup
+inline bool IsReleased(lua_State *L, int narg, const char *name) {
+    if (lua_userdatatag(L, narg) != kReleasedTag || !lua_getmetatable(L, narg))
+        return false;
+    lua_getfield(L, LUA_REGISTRYINDEX, name);
+    const bool same = lua_rawequal(L, -1, -2) != 0;
+    lua_pop(L, 2);
+    return same;
+}
+
+// a released userdata keeps its metatable, so identity tells an unloaded value
+// of this type apart from an unrelated one
+inline void BadArgument(lua_State *L, int narg, const char *name) {
+    if (IsReleased(L, narg, name))
+        luaL_error(L, "%s has been unloaded", name);
+    luaL_typeerror(L, narg, name);
+}
+
 template <typename T>
 inline T *CheckUd(lua_State *L, int narg) {
-    void *p = lua_touserdatatagged(L, narg, UdTraits<T>::kTag);
-    if (p == nullptr)
-        luaL_typeerror(L, narg, UdTraits<T>::kName);
-    return static_cast<T *>(p);
+    void *payload = lua_touserdatatagged(L, narg, UdTraits<T>::kTag);
+    if (payload == nullptr)
+        BadArgument(L, narg, UdTraits<T>::kName);
+    return static_cast<T *>(payload);
 }
 
 template <typename T>
-inline T *NewUd(lua_State *L) {
-    return static_cast<T *>(lua_newuserdatataggedwithmetatable(L, sizeof(T), UdTraits<T>::kTag));
+inline T *NewUd(lua_State *L, const T &value) {
+    static_assert(std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>,
+                  "userdata payloads must be trivial, RegisterType installs no destructor");
+    void *memory = lua_newuserdatataggedwithmetatable(L, sizeof(T), UdTraits<T>::kTag);
+    return ::new (memory) T(value);
 }
 
-// By value: raylib structs are small and copied on every call anyway.
 template <typename T>
 struct Conv<T, std::enable_if_t<UdTraits<T>::kBound>> {
     static T Check(lua_State *L, int narg) { return *CheckUd<T>(L, narg); }
-    static void Push(lua_State *L, const T &value) { *NewUd<T>(L) = value; }
+    static void Push(lua_State *L, const T &value) { NewUd<T>(L, value); }
 };
 
-// By pointer: raylib's in place mutators (ImageResize, UpdateCamera, ...) get
-// the address of the userdata payload, so the script sees the write. This is
-// only safe because the pointer never escapes the call.
+// writable struct pointers refer to userdata in place, the pointer must not
+// escape the call
 template <typename T>
 struct Conv<T *, std::enable_if_t<UdTraits<T>::kBound>> {
     static T *Check(lua_State *L, int narg) { return CheckUd<T>(L, narg); }
 };
 
-// ------------------------------------------------------------ field accessors
-
-// Field<&Image::width> turns a member pointer into a get/set pair. Both take
-// the raw payload so a single pair of metamethods can serve every type.
+// adapts a member pointer to userdata field accessors
 template <auto Member>
 struct Field;
 
@@ -135,7 +133,7 @@ struct Field<M> {
 struct FieldDef {
     const char *name;
     void (*get)(lua_State *, const void *);
-    void (*set)(lua_State *, void *, int);  // null on read only types
+    void (*set)(lua_State *, void *, int);  // nullptr for read only fields
 };
 
 struct TypeInfo {
@@ -145,13 +143,12 @@ struct TypeInfo {
     int fieldCount;
 };
 
-// Fields are emitted sorted, so this is a binary search over at most ~16 short
-// names. Fast enough that interning key atoms is not worth the machinery yet.
+// generated fields are sorted for binary search
 inline const FieldDef *FindField(const TypeInfo &type, const char *key) {
     int lo = 0, hi = type.fieldCount - 1;
     while (lo <= hi) {
-        int mid = (lo + hi) / 2;
-        int cmp = std::strcmp(key, type.fields[mid].name);
+        const int mid = (lo + hi) / 2;
+        const int cmp = std::strcmp(key, type.fields[mid].name);
         if (cmp == 0)
             return &type.fields[mid];
         if (cmp < 0)
@@ -162,18 +159,15 @@ inline const FieldDef *FindField(const TypeInfo &type, const char *key) {
     return nullptr;
 }
 
-// The TypeInfo rides along as upvalue 1 of the metamethod closure.
 inline const TypeInfo &UpvalueType(lua_State *L) {
     return *static_cast<const TypeInfo *>(lua_tolightuserdata(L, lua_upvalueindex(1)));
 }
 
-// The metatable is reachable through getmetatable(), so a script can call these
-// with anything as self. lua_touserdatatagged returns null on a tag mismatch and
-// the accessors dereference it, so the tag has to be checked, not assumed.
+// scripts can reach these through getmetatable() with any value as self
 inline void *CheckSelf(lua_State *L, const TypeInfo &type) {
     void *self = lua_touserdatatagged(L, 1, type.tag);
     if (self == nullptr)
-        luaL_typeerror(L, 1, type.name);
+        BadArgument(L, 1, type.name);
     return self;
 }
 
@@ -207,47 +201,38 @@ inline int ToStringField(lua_State *L) {
     return 1;
 }
 
-// Installs the shared metatable for one tag. Luau refuses to reassign a tag's
-// metatable, so this runs once per lua_State.
-//
-// luaL_newmetatable rather than lua_createtable because lua_setuserdatametatable
-// stores into a slot the collector only visits when a cycle starts, and it runs
-// no write barrier. Registering while a cycle is already in progress would leave
-// the metatable unmarked and it would be swept out from under the userdata. The
-// registry entry luaL_newmetatable leaves behind keeps it reachable regardless;
-// this is the same pairing Luau's own tagged userdata tests use.
+// without LuauUdataMetatablePinned, Luau does not root tag metatables,
+// luaL_newmetatable keeps them in the registry
 inline void RegisterType(lua_State *L, const TypeInfo &type) {
-    // a duplicate name would silently clobber another tag's metatable in release,
-    // where lua_setuserdatametatable's guard compiles out
+    // Luau only rejects a reassigned tag through an assert, which release drops
+    lua_getuserdatametatable(L, type.tag);
+    const bool taken = !lua_isnil(L, -1);
+    lua_pop(L, 1);
+    if (taken)
+        luaL_error(L, "userdata tag %d is already registered", type.tag);
     if (luaL_newmetatable(L, type.name) == 0)
         luaL_error(L, "duplicate userdata type name '%s'", type.name);
-    lua_pushlightuserdata(L, const_cast<TypeInfo *>(&type));
-    lua_pushcclosure(L, IndexField, "__index", 1);
-    lua_setfield(L, -2, "__index");
-    lua_pushlightuserdata(L, const_cast<TypeInfo *>(&type));
-    lua_pushcclosure(L, NewIndexField, "__newindex", 1);
-    lua_setfield(L, -2, "__newindex");
-    lua_pushlightuserdata(L, const_cast<TypeInfo *>(&type));
-    lua_pushcclosure(L, ToStringField, "__tostring", 1);
-    lua_setfield(L, -2, "__tostring");
+
+    for (const auto &entry : {std::pair{"__index", IndexField}, std::pair{"__newindex", NewIndexField},
+                              std::pair{"__tostring", ToStringField}}) {
+        lua_pushlightuserdata(L, const_cast<TypeInfo *>(&type));
+        lua_pushcclosure(L, entry.second, entry.first, 1);
+        lua_setfield(L, -2, entry.first);
+    }
     lua_pushstring(L, type.name);  // makes typeof(texture) read "Texture"
     lua_setfield(L, -2, "__type");
     lua_setreadonly(L, -1, true);
     lua_setuserdatametatable(L, type.tag);
 }
 
-// ---------------------------------------------------------------- constructors
-
-// Ctor<Rectangle, &Rectangle::x, ...>::Call builds a zeroed struct and fills
-// the listed fields from the arguments in order. Trailing arguments may be
-// omitted and stay zero.
+// assigns optional fields in declaration order
 template <typename S, auto... Members>
 struct Ctor {
     static int Call(lua_State *L) {
         S value{};
         int narg = 0;
         (AssignOpt<Members>(L, &value, ++narg), ...);
-        *NewUd<S>(L) = value;
+        NewUd<S>(L, value);
         return 1;
     }
 
@@ -259,8 +244,6 @@ private:
     }
 };
 
-// ------------------------------------------------------------- call wrapper
-
 template <typename Signature, Signature fn>
 struct Wrapper;
 
@@ -271,8 +254,7 @@ struct Wrapper<R (*)(A...), fn> {
 private:
     template <std::size_t... I>
     static int Invoke(lua_State *L, std::index_sequence<I...>) {
-        // braced init pins left to right evaluation; a plain call expression
-        // leaves argument order unspecified and reports type errors out of order
+        // braced initialization preserves left to right argument checks
         [[maybe_unused]] std::tuple<A...> args{Conv<std::remove_cv_t<A>>::Check(L, int(I) + 1)...};
         if constexpr (std::is_void_v<R>) {
             fn(std::get<I>(args)...);
@@ -286,7 +268,5 @@ private:
 
 }  // namespace bind
 
-// raylib declares its functions extern "C"; clang, gcc and msvc all ignore
-// language linkage when matching the function pointer template parameter.
+// supported compilers ignore C language linkage in this template match
 #define BIND_FN(f) (&::bind::Wrapper<decltype(&f), &f>::Call)
-

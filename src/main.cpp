@@ -51,8 +51,8 @@ bool CfgFlag(lua_State *L, int table, const char *key, bool fallback) {
     return value;
 }
 
-// Boots the VM and pulls game/window.luau in through require, so the table read
-// here is the very same one the game later gets from require("window").
+// boots the VM and pulls game/window.luau in through require, so the table read
+// here is the very same one the game later gets from require("window")
 void LoadWindowConfig() {
     std::snprintf(config.title, sizeof(config.title), "game");
     config.width = 960;
@@ -158,7 +158,6 @@ bool RunUpdate() {
     bool missing = false;
     if (!script.CallGlobal("update", &missing)) {
         if (missing) TraceLog(LOG_ERROR, "SCRIPT: update() is not defined");
-        else EndDrawing();  // close the frame if the error hit mid draw
         return false;
     }
     if (script.LastResultTruthy()) quit = true;
@@ -320,8 +319,7 @@ int main(void) {
         if (watch) WatchFiles();
         Frame();
     }
-    TraceLog(LOG_WARNING, "PROBE: loop exit shouldClose=%d quit=%d scriptOk=%d booted=%d",
-             (int)WindowShouldClose(), (int)quit, (int)scriptOk, (int)booted);
+
 #endif
 
     script.Close();

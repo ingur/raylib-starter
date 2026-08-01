@@ -21,7 +21,7 @@ function update()
     rl.BeginDrawing()
     rl.ClearBackground(rl.RAYWHITE)
     rl.DrawTextureV(sprite, pos, rl.WHITE)
-    rl.DrawText("with ./build.sh dev, edit game/main.lua and save, the box keeps going", 20, 20, 20, rl.DARKGRAY)
+    rl.DrawText("with ./build.sh dev, edit game/main.luau and save, the box keeps going", 20, 20, 20, rl.DARKGRAY)
     rl.EndDrawing()
 end
 

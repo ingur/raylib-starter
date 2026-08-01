@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
-# Build helper, a thin wrapper over zig build.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-# --- Utility Functions ---
-
 CONFIG=ReleaseFast
-TARGET=x86_64-linux-gnu.2.17  # portable baseline for linux releases
+TARGET=x86_64-linux-gnu.2.17  # glibc 2.17 baseline for Linux releases
 
 set_config() {
     case "${1:-release}" in
@@ -20,16 +17,14 @@ project_name() {
     sed -n 's/^const name = "\([A-Za-z0-9_-]*\)".*/\1/p' build.zig
 }
 
-# --- Commands ---
-
 run() {
     set_config "${1:-debug}"
-    unset WATCH  # run never watches, dev does
+    unset WATCH  # ignore an inherited WATCH value
     zig build run -Doptimize=$CONFIG -Dtarget=$TARGET
 }
 
 dev() {
-    export WATCH=1  # hot reload, see WatchFiles in src/main.cpp
+    export WATCH=1  # enable file watching
     zig build run -Doptimize=Debug -Dtarget=$TARGET
 }
 
@@ -71,8 +66,6 @@ bindgen() {
 clean() {
     rm -rf zig-out .zig-cache dist
 }
-
-# --- Command Handling ---
 
 show_help() {
     echo "Usage: $0 <command> [options]"

@@ -1,28 +1,23 @@
 const std = @import("std");
 const raylib_zig = @import("raylib");
 
-// Rename the binary here.
 const name = "game";
 
-// Packed assets file name. The pak is a plain zip.
 const assets_pak = "assets.pak";
 
-// raylib and miniz stay C, our host and luau are C++17.
-// -ffp-contract=off everywhere so float results do not drift between targets.
+// raylib and miniz use C. The host and Luau use C++17.
+// disable FP contraction for consistent results across targets
 const cflags = [_][]const u8{ "-std=gnu11", "-ffp-contract=off" };
 const cxxflags = [_][]const u8{ "-std=c++17", "-ffp-contract=off" };
 
-// luau's VM assumes math functions never touch errno
+// match Luau.VM's upstream -fno-math-errno flag
 const vm_cxxflags = cxxflags ++ [_][]const u8{"-fno-math-errno"};
 
-// miniz's source tarball has no amalgamation, compile the same list as upstream
+// miniz 3.1.2 has no amalgamated source file
 const miniz_srcs = [_][]const u8{ "miniz.c", "miniz_zip.c", "miniz_tinfl.c", "miniz_tdef.c" };
 
-// luau ships cmake only, so its libraries are compiled here as plain source lists.
-// Analysis/, Config/, Require/, Inliner/ and the CLI are not embedded.
-// Luau.Common stopped being header only in 0.732: format/vformat/formatAppend
-// live in Common/src/StringUtils.cpp and the Ast, Bytecode and CodeGen libraries
-// all link against them.
+// Luau has no Zig build, so compile the embedded libraries from source
+// Ast, Bytecode, and CodeGen link Luau.Common in 0.732
 const luau_src_dirs = [_][]const u8{ "Common/src", "Ast/src", "Bytecode/src", "Compiler/src" };
 const luau_includes = [_][]const u8{
     "Common/include",
@@ -80,7 +75,7 @@ pub fn build(b: *std.Build) !void {
         .luau_vm_srcs = luau_vm_srcs,
     });
 
-    // the raylib package omits its parser output, fetch the pinned one
+    // the raylib Zig package omits raylib_api.json, so fetch it from the pinned tag
     const fetch_api = b.addSystemCommand(&.{ "curl", "-fsSL", b.fmt(
         "https://raw.githubusercontent.com/raysan5/raylib/{s}/tools/rlparser/output/raylib_api.json",
         .{raylibTag()},
@@ -95,7 +90,6 @@ pub fn build(b: *std.Build) !void {
     b.step("bindgen", "Regenerate the raylib bindings and Luau type definitions")
         .dependOn(&bindgen.step);
 
-    // clangd reads the generated compile_flags.txt
     var flags: []const u8 = b.fmt("-xc++\n-std=c++17\n-Isrc\n-I{s}\n-I{s}\n", .{
         raylib_dep.builder.pathFromRoot("src"),
         miniz_dep.builder.pathFromRoot("."),
@@ -127,14 +121,13 @@ fn native(b: *std.Build, opts: NativeOptions) !void {
     const is_linux = opts.target.result.os.tag == .linux;
     const is_windows = opts.target.result.os.tag == .windows;
 
-    // zig 0.16 otherwise packs the resolved .so files of system libraries into
-    // the static raylib archive (https://github.com/ziglang/zig/issues/20476),
-    // so they are stripped here and relinked on the executable instead
+    // work around Zig issue 20476. It can add resolved system .so files to
+    // raylib's static archive, so relink them on the executable
     var sys_libs: std.array_list.Managed(std.Build.Module.SystemLib) = .init(b.allocator);
     var lib_dirs: std.array_list.Managed([]const u8) = .init(b.allocator);
     if (is_linux) {
         const pkg_config = b.graph.environ_map.get("PKG_CONFIG") orelse "pkg-config";
-        // versioned glibc targets skip host system dirs, make pkg-config emit them
+        // include host library paths when targeting versioned glibc
         const out = b.run(&.{
             "env",
             "PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1",
@@ -159,7 +152,7 @@ fn native(b: *std.Build, opts: NativeOptions) !void {
         var it = std.mem.tokenizeAny(u8, out, " \n\r\t");
         while (it.next()) |tok| {
             if (std.mem.startsWith(u8, tok, "-I")) {
-                // -idirafter keeps zig's bundled libc headers ahead of the host's
+                // keep Zig's libc headers ahead of host headers
                 raylib.root_module.addAfterIncludePath(.{ .cwd_relative = b.dupe(tok[2..]) });
             } else if (std.mem.startsWith(u8, tok, "-L")) {
                 try lib_dirs.append(b.dupe(tok[2..]));
@@ -221,13 +214,12 @@ fn native(b: *std.Build, opts: NativeOptions) !void {
 
     const exe = b.addExecutable(.{ .name = name, .root_module = exe_mod });
     if (is_linux) {
-        // host X11 and wayland libs resolve their own dependencies at runtime
+        // let host X11 and Wayland libraries resolve their runtime dependencies
         exe.linker_allow_shlib_undefined = true;
     }
     if (is_windows and opts.ndebug) exe.subsystem = .Windows;
     b.installArtifact(exe);
 
-    // pack assets/ and game/ into a zip beside the binary
     const pak = pakStep(b, "zig-out/bin");
     b.getInstallStep().dependOn(&pak.step);
 
@@ -267,7 +259,7 @@ fn web(b: *std.Build, opts: WebOptions) !void {
     });
     for (opts.game_srcs) |f| try srcs.append(.{ .path = b.path(f) });
 
-    // luau throws C++ exceptions on error, so wasm EH is needed on objects and the link
+    // Luau throws C++ exceptions, so WebAssembly objects and the link need EH
     const link = b.addSystemCommand(&.{ "emcc", "-O3", "-fwasm-exceptions" });
     link.setName("emcc link");
     link.setCwd(b.path(""));
@@ -299,7 +291,7 @@ fn web(b: *std.Build, opts: WebOptions) !void {
         "-sUSE_GLFW=3",
         "-sEXPORTED_RUNTIME_METHODS=ccall",
         "-sALLOW_MEMORY_GROWTH=1",
-        // emcc still defaults MAX_WEBGL_VERSION to 1, GRAPHICS_API_OPENGL_ES3 needs 2
+        // Emscripten defaults to WebGL 1. raylib's ES3 backend needs WebGL 2.
         "-sMIN_WEBGL_VERSION=2",
         "-sMAX_WEBGL_VERSION=2",
         "-lidbfs.js",
@@ -314,10 +306,10 @@ fn web(b: *std.Build, opts: WebOptions) !void {
     b.step("web", "Build the web target").dependOn(&link.step);
 }
 
-// zip -FS syncs the archive, entries for deleted files are dropped
 fn pakStep(b: *std.Build, dir: []const u8) *std.Build.Step.Run {
     const mkdir = b.addSystemCommand(&.{ "mkdir", "-p", dir });
     mkdir.setCwd(b.path(""));
+    // -FS removes entries deleted from the source directories
     const pak = b.addSystemCommand(&.{ "zip", "-qrFS" });
     pak.addArg(b.fmt("{s}/{s}", .{ dir, assets_pak }));
     pak.addArgs(&.{ "assets", "game" });

@@ -1,11 +1,9 @@
 { pkgs, lib, ... }:
 
 {
-  # zig builds every native target, zls comes along for build.zig
   languages.zig.enable = true;
   languages.zig.version = "0.16.0";
 
-  # clangd for the C++ host, it reads the generated compile_flags.txt
   languages.cplusplus.enable = true;
   languages.cplusplus.lsp.package = pkgs.clang-tools;
 
@@ -16,17 +14,14 @@
     pkgs.pkg-config
     pkgs.emscripten
 
-    # luau-lsp drives editor completion from types/raylib.d.lua and doubles as a
-    # checker: luau-lsp analyze --definitions=types/raylib.d.lua game/*.lua.
-    # Note these track nixpkgs (luau 0.726) while the game embeds the version
-    # pinned in build.zig.zon (0.732), built from source. The pin is what runs.
+    # luau-lsp uses the generated definitions:
+    # luau-lsp analyze --definitions=types/raylib.d.luau game/*.luau
+    # the game embeds the Luau version pinned in build.zig.zon
     pkgs.luau
     pkgs.luau-lsp
 
-    # bindgen is a plain python script, it needs no third party packages
     pkgs.python3
 
-    # linux window and GL libs for raylib's GLFW (X11 and Wayland)
     pkgs.libGL
     pkgs.wayland
     pkgs.wayland-protocols
@@ -43,7 +38,7 @@
     pkgs.xorg.libXext
   ];
 
-  # GLFW dlopens these at runtime.
+  # GLFW dlopens these at runtime
   env.LD_LIBRARY_PATH = lib.makeLibraryPath [
     pkgs.libGL
     pkgs.wayland

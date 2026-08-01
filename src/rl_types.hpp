@@ -1,22 +1,12 @@
 #pragma once
-// raylib's three special-cased types.
-//
-// Everything else raylib declares is a tagged userdata handled generically by
-// bind.hpp; these three earn a bespoke representation because they are the ones
-// a game touches thousands of times a frame and neither of them should allocate:
-//
-//   Vector2, Vector3  ->  the native Luau `vector`, which lives inline in a
-//                         TValue. Vector2 uses x and y and ignores z.
-//   Color             ->  a packed 0xRRGGBBAA number, matching ColorToInt.
-//                         Color is four bytes; putting it in a float vector
-//                         would be both lossy and larger.
+// raylib types mapped onto native Luau values instead of userdata
 
 #include "bind.hpp"
 #include "raylib.h"
 
 namespace bind {
 
-// LUA_VECTOR_SIZE is 3, so the third lane is free and Vector2 simply zeroes it.
+// Luau vectors have three components, so Vector2 sets z to zero
 template <>
 struct Conv<Vector2> {
     static Vector2 Check(lua_State *L, int narg) {
@@ -64,8 +54,8 @@ inline int CtorVector3(lua_State *L) {
     return 1;
 }
 
-// Components are clamped rather than rejected: colour maths in a script drifts
-// past the byte range constantly and saturating is the useful answer.
+// components are clamped rather than rejected: colour maths in a script drifts
+// past the byte range constantly and saturating is the useful answer
 inline int CtorColor(lua_State *L) {
     auto channel = [L](int narg, double fallback) -> unsigned int {
         double v = luaL_optnumber(L, narg, fallback);

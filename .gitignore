@@ -1,4 +1,3 @@
-# Build output
 /.zig-cache/
 /zig-out/
 /zig-pkg/
@@ -7,19 +6,14 @@
 /build/
 /compile_flags.txt
 
-# Save files
 /save/
 
-# Python
 __pycache__/
 
-# Devenv
 .devenv*
 devenv.local.nix
 devenv.local.yaml
 
-# direnv
 .direnv
 
-# pre-commit
 .pre-commit-config.yaml

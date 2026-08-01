@@ -4,9 +4,8 @@
 
 struct lua_State;
 
-// Owns one Luau VM. Reset() throws the old state away and boots a fresh one,
-// which is the whole hot reload story: nothing survives a reload except the
-// string the host carries across by hand.
+// owns one Luau VM, Reset boots a fresh one and nothing survives except the
+// string the host carries across by hand
 class Script {
 public:
     Script() = default;
@@ -17,20 +16,16 @@ public:
     bool Reset(bool devMode);
     void Close();
 
-    // Compiles and runs a vfs script as the entry chunk. `missing` reports a
-    // file that is not there, as opposed to one that failed.
+    // `missing` reports a file that is not there, as opposed to one that failed
     bool RunEntry(const char *path, bool *missing = nullptr);
 
-    // Calls a global function. `missing` reports an undefined global.
     bool CallGlobal(const char *name, bool *missing = nullptr);
     bool CallGlobalStr(const char *name, const char *arg, bool *missing = nullptr);
 
-    // Runs a module through the host require and leaves its value on the VM
-    // stack for the caller to read via State(). Pops nothing on failure.
+    // leaves the module value on the VM stack, nothing on failure
     bool Require(const char *name, bool *missing = nullptr);
 
-    // Result of the previous call. Truthy drives update() -> quit, the string
-    // is the reload state; LastResultString() is null unless it really was one.
+    // result of the previous call
     bool LastResultTruthy() const { return lastTruthy; }
     bool LastResultNil() const { return lastNil; }
     const char *LastResultString() const { return lastIsString ? lastString.c_str() : nullptr; }

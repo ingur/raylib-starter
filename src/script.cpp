@@ -1,6 +1,7 @@
 #include "script.hpp"
 
 #include "raylib_bind.hpp"
+#include "rl_adapters.hpp"
 #include "vfs.hpp"
 
 #include "lua.h"
@@ -26,14 +27,12 @@ const char *const kTraceback = "game.traceback";
 // that requires itself fails loudly instead of recursing forever
 char kLoading;
 
-// Compiles source and leaves the chunk on the stack. On failure the error
-// string is left on the stack instead, matching luau_load's own contract.
+// leaves the chunk or its compile error on the stack
 bool LoadChunk(lua_State *L, const char *chunkname, const std::string &source) {
     lua_CompileOptions opts = {};
     opts.optimizationLevel = 2;
     opts.debugLevel = 1;
     opts.typeInfoLevel = 1;
-    opts.userdataTypes = kRaylibUserdataTypes;
     opts.vectorLib = "vector";
     opts.vectorCtor = "create";
     opts.vectorType = "vector";
@@ -67,9 +66,16 @@ int Traceback(lua_State *L) {
 
 // host replacement for Luau's require: resolves game/<name>.luau through the
 // vfs, runs it once and caches whatever it returned
+// the name is canonicalised first so the cache key, the chunk name and the vfs
+// path always agree. Without that, require("a/b") and require("a\\b") would read
+// the same file but run and cache it twice, giving two modules with two states
 int HostRequire(lua_State *L) {
-    const char *name = luaL_checkstring(L, 1);
-    lua_settop(L, 1);
+    std::string module = luaL_checkstring(L, 1);
+    for (char &c : module)
+        if (c == '\\') c = '/';
+    lua_settop(L, 0);
+    lua_pushlstring(L, module.data(), module.size());  // 1: canonical name
+    const char *name = lua_tostring(L, 1);
 
     lua_getfield(L, LUA_REGISTRYINDEX, kModuleCache);  // 2: cache
     lua_rawgetfield(L, 2, name);                       // 3: cached value
@@ -184,21 +190,35 @@ void Script::CaptureError() {
     std::fprintf(stderr, "%s\n", lastError);
 }
 
+// every host call boundary. raylib's render scopes must come back the way they
+// went in: unwinding to the entry depth keeps a nested require inside an open
+// BeginDrawing legal, while a forgotten End is reported on the frame it happens
+// rather than corrupting later ones
 bool Script::Pcall(int nargs, int nresults) {
     int base = lua_gettop(L) - nargs;  // the function being called
     lua_getfield(L, LUA_REGISTRYINDEX, kTraceback);
     lua_insert(L, base);
+    const int scopes = adapt::ScopeDepth();
     int status = lua_pcall(L, nargs, nresults, base);
     lua_remove(L, base);
     if (status != LUA_OK) {
+        adapt::UnwindScopes(scopes);
         CaptureError();
+        return false;
+    }
+    if (adapt::ScopeDepth() != scopes) {
+        std::snprintf(lastError, sizeof(lastError), "returned with raylib scope %s left open",
+                      adapt::InnermostScopeName());
+        adapt::UnwindScopes(scopes);
+        lua_settop(L, base - 1);
+        std::fprintf(stderr, "%s\n", lastError);
         return false;
     }
     return true;
 }
 
 // Reset() only fails when the allocator does, but the boot path carries on so
-// the error screen can say so; every call has to survive a dead vm.
+// the error screen can say so; every call has to survive a dead vm
 bool Script::NoState() {
     if (L != nullptr) return false;
     std::snprintf(lastError, sizeof(lastError), "the lua state is not running");
