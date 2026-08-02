@@ -19,8 +19,7 @@ struct ScriptState {
     std::vector<std::pair<ScriptState, ScriptState>> pairs;  // Table
 };
 
-// owns one Luau VM, Reset boots a fresh one and nothing survives except the
-// state the host carries across by hand
+// owns one Luau VM, Reset boots a fresh one and only ScriptState crosses
 class Script {
 public:
     Script() = default;
@@ -40,7 +39,6 @@ public:
     // leaves the module value on the VM stack, nothing on failure
     bool Require(const char *name, bool *missing = nullptr);
 
-    // result of the previous call
     bool LastResultTruthy() const { return lastTruthy; }
     bool LastResultNil() const { return lastNil; }
 

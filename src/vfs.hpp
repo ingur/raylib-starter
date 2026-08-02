@@ -9,15 +9,14 @@ struct lua_State;
 namespace vfs {
 
 // installs raylib's file callbacks and mounts ASSETS_PAK, loose files win.
-// reads see the pak and loose files, writes are restricted to save/
+// reads see the pak and loose files, writes go wherever pointed, only save/ persists on web
 bool Mount();
 void Unmount();
 
-// true when every segment is non-empty and not "." or "..", so joining the
-// path to a directory cannot climb back out of it
+// every segment is non-empty and not "." or "..", so a join cannot escape
 bool PlainPath(std::string_view path);
 
-// nullopt when the file does not exist
+// nullopt when the file cannot be read
 std::optional<std::string> Read(std::string_view path);
 
 // resolves a script module under game/

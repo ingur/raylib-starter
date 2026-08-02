@@ -5,8 +5,8 @@ const name = "game";
 
 const assets_pak = "assets.pak";
 
-// raylib and miniz use C. The host and Luau use C++17.
-// disable FP contraction for consistent results across targets
+// raylib and miniz are C, the host and Luau are C++17
+// fp contraction is off so results match across targets
 const cflags = [_][]const u8{ "-std=gnu11", "-ffp-contract=off" };
 const cxxflags = [_][]const u8{ "-std=c++17", "-ffp-contract=off" };
 
@@ -83,8 +83,7 @@ pub fn build(b: *std.Build) !void {
     const api_dir = b.addWriteFiles();
     _ = api_dir.addCopyFile(fetch_api.addOutputFileArg("raylib_api.json"), "raylib_api.json");
 
-    // upstream publishes no raymath_api.json, so build raylib's own parser and
-    // run it over the pinned header
+    // upstream publishes no raymath_api.json, so run raylib's own parser
     const fetch_parser = b.addSystemCommand(&.{ "curl", "-fsSL", b.fmt(
         "https://raw.githubusercontent.com/raysan5/raylib/{s}/tools/rlparser/rlparser.c",
         .{raylibTag()},
@@ -264,7 +263,7 @@ const WebOptions = struct {
     luau_vm_srcs: []const []const u8,
 };
 
-// a translation unit and whatever it needs on top of the flags its extension implies
+// extra flags on top of what the extension implies
 const WebSource = struct {
     path: std.Build.LazyPath,
     extra: []const []const u8 = &.{},
@@ -316,7 +315,7 @@ fn web(b: *std.Build, opts: WebOptions) !void {
         "-sUSE_GLFW=3",
         "-sEXPORTED_RUNTIME_METHODS=ccall",
         "-sALLOW_MEMORY_GROWTH=1",
-        // Emscripten defaults to WebGL 1. raylib's ES3 backend needs WebGL 2.
+        // emscripten defaults to WebGL 1, raylib's ES3 backend needs WebGL 2
         "-sMIN_WEBGL_VERSION=2",
         "-sMAX_WEBGL_VERSION=2",
         "-lidbfs.js",

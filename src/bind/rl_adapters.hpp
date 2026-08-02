@@ -1,9 +1,6 @@
 #pragma once
-// adapters for what the binding itself introduces, in three kinds:
-// the death of a handle, the recovery of an open scope, and a size that only
-// exists as a pointer in C
-// raylib owns its own parameter contracts, a call that is wrong in C is wrong
-// here for the same reason
+// adapters for what the binding introduces: handle death, open scopes, and
+// sizes C carries as a pointer
 
 #include "bind/rl_types.hpp"
 #include "raylib.h"
@@ -12,13 +9,8 @@
 
 namespace adapt {
 
-// ------------------------------------------------------------ ownership
 // the unload adapter zeroes and releases its userdata, later use errors and a
 // repeated unload is a no-op
-// fields whose structs own allocations have no getter or setter, so field reads
-// cannot create a second owning userdata
-// copies of GL name fields are borrows, they are safe to read and pass,
-// unloading them is undefined, as in C raylib
 template <typename Signature, Signature fn>
 struct Unload;
 
@@ -36,7 +28,6 @@ struct Unload<void (*)(T), fn> {
     }
 };
 
-// ----------------------------------------------------------------- scope
 // raylib's Begin/End pairs leave global render state open. A script that raises
 // between them would otherwise draw the error screen into a render target, under
 // its shader, or with its projection, and a script that forgets an End would
@@ -107,8 +98,7 @@ inline void CheckIsOpen(lua_State *L, Scope scope) {
         luaL_error(L, "End%s while %s is the innermost open scope", ScopeName(scope), ScopeName(top));
 }
 
-// validate before raylib runs, record after it succeeds, so a raised argument
-// error never leaves the stack describing a scope that was not opened
+// record only after raylib succeeds, so a raised argument error leaves no phantom scope
 template <Scope scope, typename Signature, Signature fn>
 struct ScopeBegin {
     static int Call(lua_State *L) {
@@ -129,7 +119,6 @@ struct ScopeEnd {
     }
 };
 
-// ------------------------------------------------------- representation
 // a script holds no pointer, so where raylib takes a void * whose size lives
 // in another argument, the adapter is the only place that size can be rebuilt
 

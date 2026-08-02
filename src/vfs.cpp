@@ -19,8 +19,7 @@ mz_zip_archive zip;
 std::string blob;  // backing memory for the mounted zip, must outlive it
 bool mounted;
 
-// module names and windows paths arrive with backslashes, the pak and the on
-// disk layout are always forward slash
+// module names and windows paths use backslashes, the pak and disk do not
 std::string Normalize(std::string_view path) {
     std::string name(path);
     for (char &c : name)
@@ -60,10 +59,8 @@ std::optional<std::string> ReadPak(const char *path) {
     return data;
 }
 
-// raylib owns whatever these hand back and releases it with MemFree, so this is
-// the one place the vfs copies out of its own std::string.
-// MemAlloc takes an unsigned int while the copy is a size_t, so an asset past
-// that range would wrap the allocation and overflow it.
+// raylib frees these with MemFree, so this is the one place the vfs copies out
+// MemAlloc takes an unsigned int, so a larger asset would wrap the allocation
 unsigned char *CopyOut(const std::string &data) {
     if (data.size() > static_cast<std::size_t>(UINT_MAX) - 1) return nullptr;
     auto *out = static_cast<unsigned char *>(MemAlloc(static_cast<unsigned int>(data.size() + 1)));
@@ -159,8 +156,7 @@ int LuaFileExists(lua_State *L) {
     return 1;
 }
 
-// raylib's own version measures the loose tree only, so a packed asset reads
-// as absent once the pak is the only copy
+// raylib's own version measures loose files only, so a packed asset reads as absent
 int LuaGetFileLength(lua_State *L) {
     const std::string name = Normalize(luaL_checkstring(L, 1));
     if (IsPathFile(name.c_str())) {
@@ -207,7 +203,6 @@ int LuaDirectoryExists(lua_State *L) {
     return 1;
 }
 
-// true when a line of the obj opens with the mtllib keyword
 bool DeclaresMaterials(const std::string &obj) {
     for (std::size_t line = 0; line < obj.size();) {
         const std::size_t end = obj.find('\n', line);
@@ -226,7 +221,7 @@ bool DeclaresMaterials(const std::string &obj) {
 
 // rmodels.c switches the working directory so tinyobj can open the mtl with
 // its own fopen, and leaves it there when the parse fails. neither the mtl nor
-// the textures it names reach our callbacks, so a packed obj loses them
+// the textures it names reach the vfs callbacks, so a packed obj loses them
 int LuaLoadModel(lua_State *L) {
     const char *fileName = luaL_checkstring(L, 1);
     if (IsFileExtension(fileName, ".obj") && !IsPathFile(fileName)) {
@@ -244,9 +239,8 @@ int LuaLoadModel(lua_State *L) {
     return 1;
 }
 
-// raylib returns an owning array plus a count, which no signature can hand to a
-// script. the host copies each entry into its own handle and frees the array,
-// so the poses now belong to the copies
+// raylib returns an owning array, the host copies each entry into its own
+// handle and frees the array, so the poses belong to the copies
 int LuaLoadModelAnimations(lua_State *L) {
     const char *fileName = luaL_checkstring(L, 1);
     int count = 0;  // the IQM and GLTF paths leave this untouched when they fail
@@ -263,12 +257,11 @@ int LuaLoadModelAnimations(lua_State *L) {
         UnloadModelAnimations(animations, count);
         throw;
     }
-    MemFree(animations);  // the entries now own their poses
+    MemFree(animations);
     return 1;
 }
 
-// each handle owns one animation's poses, so releasing one is the real unit and
-// a repeated release is a no-op, as with every other resource
+// each handle owns one animation's poses, so a handle is the unit of release
 void ReleaseAnimation(lua_State *L, int narg) {
     if (bind::IsReleased(L, narg, bind::UdTraits<ModelAnimation>::kName)) return;
     ModelAnimation *anim = bind::CheckUd<ModelAnimation>(L, narg);
@@ -293,8 +286,7 @@ int LuaUnloadModelAnimations(lua_State *L) {
     return 0;
 }
 
-// a FilePathList keeps its names in a char ** no script can reach, so the host
-// returns them as a table. files only, one level unless recursive
+// FilePathList holds a char ** no script can reach, so this returns a table
 int LuaLoadDirectoryFiles(lua_State *L) {
     std::string dir = Normalize(luaL_checkstring(L, 1));
     const bool recursive = lua_toboolean(L, 2) != 0;
@@ -304,7 +296,12 @@ int LuaLoadDirectoryFiles(lua_State *L) {
     if (DirectoryExists(dir.c_str())) {
         // "FILES*" is raylib's files only filter, its default tag adds directories
         FilePathList loose = LoadDirectoryFilesEx(dir.c_str(), "FILES*", recursive);
-        for (unsigned int i = 0; i < loose.count; i++) paths.emplace_back(loose.paths[i]);
+        // raylib prefixes the dir as given, so "." yields "./x" while the pak yields x
+        for (unsigned int i = 0; i < loose.count; i++) {
+            const char *path = loose.paths[i];
+            if (path[0] == '.' && path[1] == '/') path += 2;
+            paths.emplace_back(path);
+        }
         UnloadDirectoryFiles(loose);
     }
 
@@ -324,8 +321,7 @@ int LuaLoadDirectoryFiles(lua_State *L) {
     return 1;
 }
 
-// dropped paths are absolute and outside the vfs. drop order is the user's own,
-// so it is kept
+// dropped paths are absolute and outside the vfs, drop order is the user's
 int LuaLoadDroppedFiles(lua_State *L) {
     FilePathList dropped = LoadDroppedFiles();
     std::vector<std::string> paths;
@@ -336,9 +332,9 @@ int LuaLoadDroppedFiles(lua_State *L) {
 }
 
 // LoadMusicStream opens the path with its own decoder and never consults
-// raylib's file callbacks, so packed music cannot reach it. The FromMemory
-// variant streams straight from the caller's bytes and keeps the pointer, so the
-// host owns that allocation until UnloadMusicStream has returned
+// raylib's file callbacks, so packed music cannot reach it. the FromMemory
+// variant keeps the caller's pointer, so the host owns those bytes until
+// UnloadMusicStream returns
 struct MusicBuffer {
     void *ctx;
     unsigned char *bytes;
@@ -352,8 +348,7 @@ int LuaLoadMusicStream(lua_State *L) {
     if (!data) luaL_error(L, "[%s] not found", path);
     if (data->size() > static_cast<std::size_t>(INT_MAX)) luaL_error(L, "[%s] is too large", path);
 
-    // raylib lowercases the extension when it opens a path, so do the same here
-    // and the two loaders accept the same file names
+    // raylib lowercases the extension, so both loaders take the same names
     const char *suffix = GetFileExtension(path);
     std::string type(suffix != nullptr ? suffix : "");
     for (char &c : type)
@@ -423,8 +418,8 @@ static char *LoadText(const char *fileName) {
     return reinterpret_cast<char *>(CopyOut(*data));
 }
 
-// raylib routes SaveFileData, SaveFileText, every Export function and
-// TakeScreenshot through these
+// raylib routes SaveFileData, SaveFileText, TakeScreenshot and the Export
+// functions through these, except bmp and qoi images, which fopen directly
 static bool SaveData(const char *fileName, void *data, int dataSize) {
     return dataSize >= 0 && WriteFile(WritePath(fileName), data, static_cast<std::size_t>(dataSize));
 }

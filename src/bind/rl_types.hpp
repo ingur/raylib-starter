@@ -41,8 +41,6 @@ struct Conv<Color> {
     static void Push(lua_State *L, Color value) { lua_pushnumber(L, static_cast<double>(PackColor(value))); }
 };
 
-// ------------------------------------------------------------- constructors
-
 inline int CtorVector2(lua_State *L) {
     lua_pushvector(L, static_cast<float>(luaL_optnumber(L, 1, 0.0)), static_cast<float>(luaL_optnumber(L, 2, 0.0)), 0.0f);
     return 1;
@@ -54,7 +52,7 @@ inline int CtorVector3(lua_State *L) {
     return 1;
 }
 
-// components are clamped rather than rejected: colour maths in a script drifts
+// components are clamped rather than rejected: color maths in a script drifts
 // past the byte range constantly and saturating is the useful answer
 inline int CtorColor(lua_State *L) {
     auto channel = [L](int narg, double fallback) -> unsigned int {

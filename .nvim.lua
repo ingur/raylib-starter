@@ -1,4 +1,4 @@
--- requires `vim.o.exrc = true`. Trust this file when Neovim asks.
+-- requires `vim.o.exrc = true`, trust this file when Neovim asks
 local root = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p:h")
 
 vim.lsp.config("luau_lsp", {

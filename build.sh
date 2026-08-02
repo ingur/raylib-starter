@@ -24,7 +24,7 @@ run() {
 }
 
 dev() {
-    export WATCH=1  # enable file watching
+    export WATCH=1
     zig build run -Doptimize=Debug -Dtarget=$TARGET
 }
 

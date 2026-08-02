@@ -31,10 +31,10 @@ const char *const kTraceback = "game.traceback";
 // that requires itself fails loudly instead of recursing forever
 char kLoading;
 
-// a reload carries plain data only. a resource handle would outlive the unload
-// adapter that owns it, and a function cannot be rebuilt
 constexpr int kMaxStateDepth = 64;
 
+// a reload carries plain data only. a resource handle would outlive the unload
+// adapter that owns it, and a function cannot be rebuilt
 struct Snapshotter {
     std::string error;
     std::vector<const void *> seen;  // every table, so sharing and cycles both fail
@@ -203,11 +203,8 @@ int Traceback(lua_State *L) {
     return 1;
 }
 
-// host replacement for Luau's require: resolves game/<name>.luau through the
-// vfs, runs it once and caches whatever it returned
-// the name is canonicalised first so the cache key, the chunk name and the vfs
-// path always agree. Without that, require("a/b") and require("a\\b") would read
-// the same file but run and cache it twice, giving two modules with two states
+// host replacement for require. canonicalising first keeps the cache key, the
+// chunk name and the vfs path in agreement, so "a/b" and "a\\b" are one module
 int HostRequire(lua_State *L) {
     std::size_t len = 0;
     const char *raw = luaL_checklstring(L, 1, &len);
@@ -240,15 +237,13 @@ int HostRequire(lua_State *L) {
     lua_pushlightuserdata(L, &kLoading);
     lua_rawsetfield(L, 2, name);
 
-    // the traceback handler has to run at the point of the error, before the
-    // stack unwinds, so the module gets its own rather than relying on the
-    // enclosing pcall to see frames that are already gone
+    // the enclosing pcall would only see frames that are already gone
     lua_getfield(L, LUA_REGISTRYINDEX, kTraceback);
     lua_insert(L, 3);  // 3: handler, 4: chunk
     if (lua_pcall(L, 0, 1, 3) != LUA_OK) {
         lua_pushnil(L);
         lua_rawsetfield(L, 2, name);  // a module that raised is not a cycle, let it retry
-        lua_remove(L, 3);             // drop the handler, leaving the error on top
+        lua_remove(L, 3);
         lua_error(L);
     }
     lua_remove(L, 3);
@@ -306,8 +301,7 @@ bool Script::Reset(bool devMode) {
     OpenRaylib(L);
     vfs::OpenLoaders(L);
 
-    // the definitions file promises these, so a missed registration has to fail
-    // here rather than reach a script as a nil field
+    // a missed registration must fail here, not reach a script as a nil field
     lua_getglobal(L, "raylib");
     for (const char *name : kHostFunctions) {
         lua_getfield(L, -1, name);
@@ -368,10 +362,8 @@ void Script::CaptureError() {
     std::fprintf(stderr, "%s\n", lastError);
 }
 
-// every host call boundary. raylib's render scopes must come back the way they
-// went in: unwinding to the entry depth keeps a nested require inside an open
-// BeginDrawing legal, while a forgotten End is reported on the frame it happens
-// rather than corrupting later ones
+// every host call boundary. unwinding to the entry depth keeps a nested
+// require inside an open BeginDrawing legal and pins a forgotten End to its frame
 bool Script::Pcall(int nargs, int nresults) {
     int base = lua_gettop(L) - nargs;  // the function being called
     lua_getfield(L, LUA_REGISTRYINDEX, kTraceback);
@@ -395,8 +387,7 @@ bool Script::Pcall(int nargs, int nresults) {
     return true;
 }
 
-// Reset() only fails when the allocator does, but the boot path carries on so
-// the error screen can say so; every call has to survive a dead vm
+// the boot path carries on after a failed Reset, so every call must survive a dead vm
 bool Script::NoState() {
     if (L != nullptr) return false;
     std::snprintf(lastError, sizeof(lastError), "the lua state is not running");
@@ -473,8 +464,8 @@ bool Script::Require(const char *name, bool *missing) {
     ResetResult();
     if (NoState()) return false;
 
-    // probe first: a module that is simply absent is not an error for callers
-    // like the window config, and require() itself can only raise
+    // probe first: an absent module is not an error for callers like the window
+    // config, and require() can only raise
     std::string path(name);
     path += ".luau";
     if (!vfs::ReadScript(path)) {

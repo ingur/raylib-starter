@@ -1,5 +1,5 @@
-// Web save support. /save is backed by IndexedDB and mounted before main()
-// runs, so save files are readable at boot. autoPersist flushes every write.
+// /save is an IDBFS mount, synced before main() runs so saves exist at boot
+// autoPersist flushes every write
 Module.preRun = Module.preRun || [];
 Module.preRun.push(function () {
   FS.mkdir('/save');

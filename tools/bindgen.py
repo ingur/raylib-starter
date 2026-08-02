@@ -20,12 +20,12 @@ HOST_FUNCTIONS = {
     "LoadFileData": ("(fileName: string) -> buffer", "Read a binary file through the virtual filesystem"),
     "SaveFileText": ("(fileName: string, text: string) -> boolean", "Write a text file, creating parent directories"),
     "SaveFileData": ("(fileName: string, data: buffer) -> boolean", "Write a binary file, creating parent directories"),
-    "GetFileModTime": ("(fileName: string) -> number", "Modification time of a file in the virtual filesystem"),
-    "FileExists": ("(fileName: string) -> boolean", "Check a file in the virtual filesystem, loose files and the pak"),
-    "DirectoryExists": ("(dirPath: string) -> boolean", "Check a directory in the virtual filesystem, loose files and the pak"),
-    "GetFileLength": ("(fileName: string) -> number", "Byte length of a file in the virtual filesystem"),
+    "GetFileModTime": ("(fileName: string) -> number", "Get the modification time of a file in the virtual filesystem"),
+    "FileExists": ("(fileName: string) -> boolean", "Check if a file exists, loose files and the pak"),
+    "DirectoryExists": ("(dirPath: string) -> boolean", "Check if a directory exists, loose files and the pak"),
+    "GetFileLength": ("(fileName: string) -> number", "Get the byte length of a file in the virtual filesystem"),
     "LoadDirectoryFiles": ("(dirPath: string, recursive: boolean?) -> {string}", "List files in a directory, loose files and the pak"),
-    "LoadDroppedFiles": ("() -> {string}", "Paths of the files dropped onto the window"),
+    "LoadDroppedFiles": ("() -> {string}", "Load the paths of the files dropped onto the window"),
     "LoadMusicStream": ("(fileName: string) -> Music", "Load music through the virtual filesystem"),
     "UnloadMusicStream": ("(music: Music) -> ()", "Unload music and release its streaming buffer"),
     "LoadModel": ("(fileName: string) -> Model", "Load a model through the virtual filesystem"),
@@ -33,17 +33,26 @@ HOST_FUNCTIONS = {
     "UnloadModelAnimations": ("(animations: {ModelAnimation} | ModelAnimation) -> ()", "Unload one animation or a table of them"),
 }
 
-# raylib semantics a signature cannot express, so each name carries its reason.
+# functions the binding must not expose, each name carries its reason.
 # verify these on a raylib bump
 DENIED = {
+    # the host opens the window before boot and closes it after the loop
+    "InitWindow": "the host owns the window",
+    "CloseWindow": "the host owns the window",
     "UnloadFileText": "the host returns strings, which Luau collects",
     "UnloadFileData": "the host returns buffers, which Luau collects",
-    # rcore.c retains this pointer and dereferences it in later frames
     "SetAutomationEventList": "raylib keeps the pointer past the call",
-    # Sound aliases own their AudioBuffer but borrow the source sample data
+    # recording dereferences the retained list, so with the setter denied
+    # StartAutomationEventRecording crashes at the next EndDrawing
+    "LoadAutomationEventList": "useless without SetAutomationEventList",
+    "UnloadAutomationEventList": "useless without SetAutomationEventList",
+    "ExportAutomationEventList": "useless without SetAutomationEventList",
+    "SetAutomationEventBaseFrame": "useless without SetAutomationEventList",
+    "StartAutomationEventRecording": "crashes without SetAutomationEventList",
+    "StopAutomationEventRecording": "useless without SetAutomationEventList",
+    "PlayAutomationEvent": "scripts cannot fill event params, it plays no-ops",
     "LoadSoundAlias": "returns a handle borrowing another handle's allocation",
     "UnloadSoundAlias": "consumes a handle borrowing another handle's allocation",
-    # LoadModelFromMesh shallow-copies Mesh, so both values own its buffers
     "LoadModelFromMesh": "takes ownership of its argument's buffers",
     # rshapes.c returns the internal texShapes, which defaults to rlgl's white 1x1
     # texture at GL id 1, and UnloadTexture unloads any positive id. Unlike
@@ -53,6 +62,8 @@ DENIED = {
     # a FilePathList keeps its names in a char ** no script can reach, so the
     # host returns them as a table and these have nothing left to hand over
     "LoadDirectoryFilesEx": "use LoadDirectoryFiles, it takes a recursive flag",
+    "UnloadDirectoryFiles": "the host returns tables, which Luau collects",
+    "UnloadDroppedFiles": "the host returns tables, which Luau collects",
     # the report would otherwise describe these from the signature alone, and
     # the signature is misleading in each case
     "ComputeCRC32": "hashes a counted input buffer, not an out parameter",
@@ -60,23 +71,16 @@ DENIED = {
     "ComputeSHA1": "returns a static internal array, no ownership to describe",
     "ComputeSHA256": "returns a static internal array, no ownership to describe",
     "UnloadRandomSequence": "no supported function yields a random sequence",
-    "UnloadDirectoryFiles": "the host returns tables, which Luau collects",
-    "UnloadDroppedFiles": "the host returns tables, which Luau collects",
 }
 
-# The only handle-typed field a script can read. Drawing a render target needs
-# target.texture and raylib offers no function that takes a RenderTexture, so
-# this one field is a documented borrow: safe to read and pass, undefined to
-# unload, exactly as in C raylib.
+# the one handle-typed field a script can read. drawing a render target needs it
+# and raylib takes no RenderTexture, so it is a documented borrow
 BORROWED_FIELDS = {("RenderTexture", "texture")}
 
-# raylib scopes the host unwinds when a script errors mid frame. Order is the
-# generated Scope enum order
+# order must match the Scope enum in src/bind/rl_adapters.hpp
 SCOPES = ["Drawing", "TextureMode", "Mode2D", "Mode3D", "ShaderMode", "BlendMode", "ScissorMode", "VrStereoMode"]
 
-# bound through a hand written adapter in src/bind/rl_adapters.hpp because C
-# passes the value as a pointer and a script has none, so the adapter is the
-# only place the size can be rebuilt. the value is (reason, Luau signature)
+# hand written adapters in src/bind/rl_adapters.hpp, the value is (reason, Luau signature)
 ADAPTED = {
     "SetShaderValue": (
         "the value size is implied by uniformType",
@@ -99,8 +103,7 @@ SCALARS = {
 # a matching adjacent count name labels the report reason as "array"
 COUNT_NAME = re.compile(r"^(count|instances|len|length|.*Count)$")
 
-# raymath helper types, only ever returned by the *ToFloatV functions the
-# classifier already rejects
+# raymath helpers, only returned by the *ToFloatV functions the classifier rejects
 SKIPPED_STRUCTS = {"float3", "float16"}
 
 # Luau keywords, which cannot be parameter names in the definitions file
@@ -190,10 +193,7 @@ class Api:
         return Type(raw, self.aliases)
 
     def _ownership(self) -> dict:
-        """Find structs that transitively own an allocation.
-
-        Their integral fields can describe allocation bounds and stay read only.
-        """
+        """Find structs that transitively own an allocation."""
         owns = {n: any(self.parse(f["type"]).ptr > 0 for f in s["fields"]) for n, s in self.structs.items()}
         changed = True
         while changed:
@@ -237,9 +237,7 @@ def classify(api: Api, fn: dict) -> tuple[str, str]:
     """-> (plain | unload | scope | adapted | host | unsupported, reason)
 
     Structural rules decide everything a signature can answer. The tables above
-    hold only what it cannot: what raylib's own semantics make unbindable, and
-    the two calls whose value size C carries in a pointer. raylib keeps its own
-    parameter contracts, so a call that is wrong in C is wrong here the same way.
+    hold only what it cannot.
     """
     name = fn["name"]
     if name in HOST_FUNCTIONS:
@@ -285,7 +283,6 @@ def classify(api: Api, fn: dict) -> tuple[str, str]:
     for scope in SCOPES:
         if name in (f"Begin{scope}", f"End{scope}"):
             return "scope", scope
-    # Unload adapters release userdata so later use errors and repeated unloads are safe
     if name.startswith("Unload") and len(params) == 1:
         t = api.parse(params[0]["type"])
         if t.ptr == 0 and api.is_userdata(t.base) and ret.base == "void" and not ret.ptr:
@@ -340,7 +337,7 @@ def struct_fields(api: Api, name: str) -> list[tuple[str, str]]:
     for f in api.structs[name]["fields"]:
         t = api.parse(f["type"])
         if t.ptr or t.array is not None:
-            continue  # raw pointers and fixed arrays are not exposed
+            continue
         if api.value_kind(t) is None:
             continue
         if api.owns.get(t.base):
@@ -352,7 +349,10 @@ def struct_fields(api: Api, name: str) -> list[tuple[str, str]]:
 
 
 def writable(api: Api, struct: str, field: str) -> bool:
-    """Return whether a field can be assigned without corrupting a handle."""
+    """Return whether a field can be assigned without corrupting a handle.
+
+    A handle's integral fields can describe allocation bounds and stay read only.
+    """
     t = api.parse(next(f["type"] for f in api.structs[struct]["fields"] if f["name"] == field))
     if api.is_handle(t.base):
         return False
@@ -379,7 +379,7 @@ def constants(api: Api) -> list[tuple[str, str, float]]:
             out.append((d["name"], describe(d.get("description")), float(d["value"])))
         elif d["type"] == "FLOAT_MATH":
             expr = re.sub(r"(\d)f\b", r"\1", d["value"])
-            out.append((d["name"], describe(d.get("description")), float(eval(expr, {"PI": math.pi}))))  # noqa: S307
+            out.append((d["name"], describe(d.get("description")), float(eval(expr, {"PI": math.pi}))))
     return out
 
 
@@ -387,7 +387,7 @@ GENERATED = "// generated by tools/bindgen.py from raylib {version}, do not edit
 
 
 def emit_header(api: Api, version: str) -> str:
-    out = [GENERATED.format(version=version), "// run ./build.sh bindgen after a raylib bump\n#pragma once\n\n"]
+    out = [GENERATED.format(version=version), "#pragma once\n\n"]
     out.append('#include "bind/bind.hpp"\n#include "raylib.h"\n\nnamespace bind {\n\n')
     for name in api.userdata:
         out.append(
@@ -400,7 +400,7 @@ def emit_header(api: Api, version: str) -> str:
     out.append(f"\ninline constexpr int kRaylibTagCount = {len(api.userdata)};\n")
     out.append("static_assert(kRaylibTagCount < kReleasedTag, \"raylib tags collide with the released tag\");\n")
     out.append("\n}  // namespace bind\n\n")
-    out.append("// Creates the raylib global and userdata metatables for this VM.\nvoid OpenRaylib(lua_State *L);\n")
+    out.append("// one call per VM, creates the raylib global and the userdata metatables\nvoid OpenRaylib(lua_State *L);\n")
     out.append(
         "\n// names the definitions file promises, installed by src/vfs.cpp. the host\n"
         "// checks them after OpenLoaders so a missing one cannot reach a script as nil\n"
@@ -488,8 +488,8 @@ void OpenRaylib(lua_State *L) {{
     )
 
     out.append(
-        f"\n// Not bound: {len(unsupported)} of {len(api.raw['functions'])} raylib functions.\n"
-        f"// Each entry records why it is not exposed.\n//\n"
+        f"\n// Not bound: {len(unsupported)} of {len(api.raw['functions'])} raylib functions, with the reason for each\n"
+        "//\n"
     )
     width = max(len(n) for n, _ in unsupported)
     out.extend(f"//   {n:<{width}}  {r}\n" for n, r in unsupported)
@@ -505,7 +505,7 @@ def emit_defs(api: Api, bound: list[tuple[dict, str]], version: str) -> str:
         for field, ltype in struct_fields(api, name):
             text = field_doc(api, name, field)
             if (name, field) in BORROWED_FIELDS:
-                text = f"{text}. Borrowed, do not unload it separately".lstrip(". ")
+                text = f"{text} (borrowed, do not unload it)".lstrip(". ")
             out.append(doc("    ", text))
             access = "" if writable(api, name, field) else "read "
             out.append(f"    {access}{field}: {ltype}\n")

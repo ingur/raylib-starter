@@ -126,6 +126,7 @@
       }
 
       status.hidden = false;
+      // parses the "(n/total)" suffix monitorRunDependencies appends below
       const match = text.match(/^(.*?)\s*\(([\d.]+)\/([\d.]+)\)$/);
       if (match) {
         const value = Number(match[2]);

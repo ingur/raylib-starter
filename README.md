@@ -52,6 +52,8 @@ Useful commands:
 - `after_reload(state)` receives that table after a successful reload
 - Reload state holds booleans, numbers, strings, vectors, buffers and nested tables. Anything else is reported and the state is dropped
 - Hot reload does not release GPU or audio resources. Unload them in `before_reload()`
+- Reloads run `main.luau` again, so guard one-time setup like `rl.InitAudioDevice()` with `rl.IsAudioDeviceReady()`
+- `rl.SetShapesTexture` survives reloads, reset it with `rl.SetShapesTexture(tex, rl.Rectangle())` before unloading the texture
 
 ## raylib bindings
 
@@ -68,6 +70,7 @@ local rl = raylib
 - Other supported raylib structs use userdata with field access
 - Resource handles have no script constructor
 - Enums and colors are flat values such as `rl.KEY_SPACE` and `rl.RAYWHITE`
+- `rl.LoadShader` takes no nil, pass `""` to keep raylib's default shader for that slot
 - Functions that cannot be exposed safely are absent
 - `./build.sh bindgen` regenerates the bindings and the unsupported report
 
@@ -82,9 +85,11 @@ The template does not bind every raylib function.
 - `rl.LoadFileText` returns a string, `rl.LoadFileData` returns a buffer
 - Both loaders raise an error when the file is missing
 - `rl.SaveFileText` and `rl.SaveFileData` create parent directories on the way
+- Exports and `rl.TakeScreenshot` follow the same rules, except `.bmp` and `.qoi` images, which write straight to disk and never persist on web
 - `rl.FileExists`, `rl.DirectoryExists`, `rl.GetFileLength`, `rl.GetFileModTime` and `rl.LoadDirectoryFiles` answer for loose files and the pak
 - Everything else raylib offers for files is bound as raylib defines it
-- raylib 6.0's own `FileMove` copies but never removes the source, use `rl.FileCopy` then `rl.FileRemove`
+- `rl.ChangeDirectory` moves loose reads, writes and the dev watcher with it, capture `rl.GetWorkingDirectory()` and restore it
+- raylib 6.0's `FileMove` deletes the source when the copy fails, use `rl.FileCopy` then `rl.FileRemove`
 
 ## Models
 
@@ -92,6 +97,8 @@ The template does not bind every raylib function.
 - `rl.LoadModelAnimations` returns a table of handles, pass it back to `rl.UnloadModelAnimations`
 - glTF, GLB and IQM load fully from the pak, including their animations
 - An obj that declares materials must stay a loose file, raylib opens the mtl and its textures itself
+- `rl.SetMaterialTexture` hands the texture to the material, `rl.UnloadMaterial` frees it, do not also `rl.UnloadTexture` it
+- Textures a model file loads stay allocated until exit, scripts cannot reach them to unload
 - Debug builds abort on m3d, raylib's bundled parser reads unaligned and Zig traps that
 
 ## Limitations
@@ -106,6 +113,7 @@ reason in the report at the end of `src/bind/raylib_bind.cpp`.
 
 - The audio stream callback and the mixed processors. They run on raylib's audio thread and one Luau VM is not thread safe
 - `SetTraceLogCallback`, a variadic C callback, and the four file callback setters, which are how the virtual filesystem is installed
+- The window lifecycle and the automation events. The host owns the window, and recording needs a list pointer raylib keeps past the call
 - Calls taking an array of values, the splines and the triangle strips. Loop the bound single element calls, `DrawSplineSegment*`, `DrawLineV`, `DrawTriangle`
 - `DrawMeshInstanced`, which has no single element equivalent
 - Writing into a raylib buffer, `UpdateAudioStream`, `UpdateSound`, `UpdateMeshBuffer`, `UpdateTextureRec`, `SetShaderValueV`. Scripts cannot synthesise audio or stream vertices
@@ -123,6 +131,7 @@ for the callbacks, since the audio thread cannot enter the one Luau VM.
 - Neovim uses the committed `.nvim.lua` after `vim.o.exrc = true`
 - Other editors can pass `--definitions:@raylib=<repo>/types/raylib.d.luau` to luau-lsp
 - Set luau-lsp `platform.type` to `standard`
+- Check scripts without an editor with `luau-lsp analyze --definitions=types/raylib.d.luau game/*.luau`
 
 ## Project settings
 

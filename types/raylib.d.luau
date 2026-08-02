@@ -91,7 +91,7 @@ end
 declare extern type RenderTexture with
     --- OpenGL framebuffer object id
     read id: number
-    --- Color buffer attachment texture. Borrowed, do not unload it separately
+    --- Color buffer attachment texture (borrowed, do not unload it)
     read texture: Texture
 end
 
@@ -348,10 +348,6 @@ export type Camera = Camera3D
 declare DEV: boolean
 
 declare raylib: {
-    --- Initialize window and OpenGL context
-    InitWindow: (width: number, height: number, title: string) -> (),
-    --- Close window and unload OpenGL context
-    CloseWindow: () -> (),
     --- Check if application should close (KEY_ESCAPE pressed or windows close icon clicked)
     WindowShouldClose: () -> boolean,
     --- Check if window has been initialized successfully
@@ -594,20 +590,6 @@ declare raylib: {
     GetDirectoryFileCount: (dirPath: string) -> number,
     --- Get the file count in a directory with extension filtering and recursive directory scan. Use 'DIR' in the filter string to include directories in the result
     GetDirectoryFileCountEx: (basePath: string, filter: string, scanSubdirs: boolean) -> number,
-    --- Load automation events list from file, NULL for empty list, capacity = MAX_AUTOMATION_EVENTS
-    LoadAutomationEventList: (fileName: string) -> AutomationEventList,
-    --- Unload automation events list from file
-    UnloadAutomationEventList: (list: AutomationEventList) -> (),
-    --- Export automation events list as text file
-    ExportAutomationEventList: (list: AutomationEventList, fileName: string) -> boolean,
-    --- Set automation event internal base frame to start recording
-    SetAutomationEventBaseFrame: (frame: number) -> (),
-    --- Start recording automation events (AutomationEventList must be set)
-    StartAutomationEventRecording: () -> (),
-    --- Stop recording automation events
-    StopAutomationEventRecording: () -> (),
-    --- Play a recorded automation event
-    PlayAutomationEvent: (event: AutomationEvent) -> (),
     --- Check if a key has been pressed once
     IsKeyPressed: (key: number) -> boolean,
     --- Check if a key has been pressed again
@@ -1448,17 +1430,17 @@ declare raylib: {
     QuaternionEquals: (p: Quaternion, q: Quaternion) -> number,
     MatrixCompose: (translation: vector, rotation: Quaternion, scale: vector) -> Matrix,
 
-    --- Check a directory in the virtual filesystem, loose files and the pak
+    --- Check if a directory exists, loose files and the pak
     DirectoryExists: (dirPath: string) -> boolean,
-    --- Check a file in the virtual filesystem, loose files and the pak
+    --- Check if a file exists, loose files and the pak
     FileExists: (fileName: string) -> boolean,
-    --- Byte length of a file in the virtual filesystem
+    --- Get the byte length of a file in the virtual filesystem
     GetFileLength: (fileName: string) -> number,
-    --- Modification time of a file in the virtual filesystem
+    --- Get the modification time of a file in the virtual filesystem
     GetFileModTime: (fileName: string) -> number,
     --- List files in a directory, loose files and the pak
     LoadDirectoryFiles: (dirPath: string, recursive: boolean?) -> {string},
-    --- Paths of the files dropped onto the window
+    --- Load the paths of the files dropped onto the window
     LoadDroppedFiles: () -> {string},
     --- Read a binary file through the virtual filesystem
     LoadFileData: (fileName: string) -> buffer,

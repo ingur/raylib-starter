@@ -284,8 +284,6 @@ struct FnDef {
 };
 
 const FnDef kFunctions[] = {
-    {"InitWindow", BIND_FN(InitWindow)},
-    {"CloseWindow", BIND_FN(CloseWindow)},
     {"WindowShouldClose", BIND_FN(WindowShouldClose)},
     {"IsWindowReady", BIND_FN(IsWindowReady)},
     {"IsWindowFullscreen", BIND_FN(IsWindowFullscreen)},
@@ -407,13 +405,6 @@ const FnDef kFunctions[] = {
     {"IsFileDropped", BIND_FN(IsFileDropped)},
     {"GetDirectoryFileCount", BIND_FN(GetDirectoryFileCount)},
     {"GetDirectoryFileCountEx", BIND_FN(GetDirectoryFileCountEx)},
-    {"LoadAutomationEventList", BIND_FN(LoadAutomationEventList)},
-    {"UnloadAutomationEventList", BIND_UNLOAD(UnloadAutomationEventList)},
-    {"ExportAutomationEventList", BIND_FN(ExportAutomationEventList)},
-    {"SetAutomationEventBaseFrame", BIND_FN(SetAutomationEventBaseFrame)},
-    {"StartAutomationEventRecording", BIND_FN(StartAutomationEventRecording)},
-    {"StopAutomationEventRecording", BIND_FN(StopAutomationEventRecording)},
-    {"PlayAutomationEvent", BIND_FN(PlayAutomationEvent)},
     {"IsKeyPressed", BIND_FN(IsKeyPressed)},
     {"IsKeyPressedRepeat", BIND_FN(IsKeyPressedRepeat)},
     {"IsKeyDown", BIND_FN(IsKeyDown)},
@@ -1278,7 +1269,7 @@ void OpenRaylib(lua_State *L) {
     for (const TypeInfo *type : kTypes)
         bind::RegisterType(L, *type);
 
-    lua_createtable(L, 0, 993);
+    lua_createtable(L, 0, 984);
     for (const FnDef &def : kFunctions) {
         lua_pushcfunction(L, def.fn, def.name);
         lua_rawsetfield(L, -2, def.name);
@@ -1294,117 +1285,125 @@ void OpenRaylib(lua_State *L) {
     lua_setglobal(L, "raylib");
 }
 
-// Not bound: 111 of 746 raylib functions.
-// Each entry records why it is not exposed.
+// Not bound: 120 of 746 raylib functions, with the reason for each
 //
-//   SetWindowIcons              Image * array
-//   GetWindowHandle             returns void *, ownership is not described by the api
-//   SetShaderValueV             raw const void * buffer parameter
-//   LoadRandomSequence          returns int *, ownership is not described by the api
-//   UnloadRandomSequence        no supported function yields a random sequence
-//   TraceLog                    variadic, use string.format
-//   SetTraceLogCallback         takes the C callback TraceLogCallback
-//   MemAlloc                    returns void *, ownership is not described by the api
-//   MemRealloc                  returns void *, ownership is not described by the api
-//   MemFree                     raw void * buffer parameter
-//   UnloadFileData              the host returns buffers, which Luau collects
-//   ExportDataAsCode            const unsigned char * array
-//   UnloadFileText              the host returns strings, which Luau collects
-//   SetLoadFileDataCallback     takes the C callback LoadFileDataCallback
-//   SetSaveFileDataCallback     takes the C callback SaveFileDataCallback
-//   SetLoadFileTextCallback     takes the C callback LoadFileTextCallback
-//   SetSaveFileTextCallback     takes the C callback SaveFileTextCallback
-//   LoadDirectoryFilesEx        use LoadDirectoryFiles, it takes a recursive flag
-//   UnloadDirectoryFiles        the host returns tables, which Luau collects
-//   UnloadDroppedFiles          the host returns tables, which Luau collects
-//   CompressData                returns unsigned char *, ownership is not described by the api
-//   DecompressData              returns unsigned char *, ownership is not described by the api
-//   EncodeDataBase64            returns char *, ownership is not described by the api
-//   DecodeDataBase64            returns unsigned char *, ownership is not described by the api
-//   ComputeCRC32                hashes a counted input buffer, not an out parameter
-//   ComputeMD5                  returns a static internal array, no ownership to describe
-//   ComputeSHA1                 returns a static internal array, no ownership to describe
-//   ComputeSHA256               returns a static internal array, no ownership to describe
-//   SetAutomationEventList      raylib keeps the pointer past the call
-//   GetShapesTexture            borrows raylib's internal texture, unloading it breaks the renderer
-//   DrawLineStrip               const Vector2 * array
-//   DrawTriangleFan             const Vector2 * array
-//   DrawTriangleStrip           const Vector2 * array
-//   DrawSplineLinear            const Vector2 * array
-//   DrawSplineBasis             const Vector2 * array
-//   DrawSplineCatmullRom        const Vector2 * array
-//   DrawSplineBezierQuadratic   const Vector2 * array
-//   DrawSplineBezierCubic       const Vector2 * array
-//   CheckCollisionPointPoly     const Vector2 * array
-//   CheckCollisionLines         Vector2 * out parameter
-//   LoadImageAnim               int * out parameter
-//   LoadImageAnimFromMemory     const unsigned char * array
-//   LoadImageFromMemory         const unsigned char * array
-//   ExportImageToMemory         returns unsigned char *, ownership is not described by the api
-//   ImageKernelConvolution      const float * array
-//   LoadImageColors             returns Color *, ownership is not described by the api
-//   LoadImagePalette            returns Color *, ownership is not described by the api
-//   UnloadImageColors           Color * out parameter
-//   UnloadImagePalette          Color * out parameter
-//   ImageDrawTriangleFan        const Vector2 * array
-//   ImageDrawTriangleStrip      const Vector2 * array
-//   UpdateTextureRec            raw const void * buffer parameter
-//   GetPixelColor               raw void * buffer parameter
-//   SetPixelColor               raw void * buffer parameter
-//   LoadFontEx                  const int * array
-//   LoadFontFromMemory          const unsigned char * array
-//   LoadFontData                returns GlyphInfo *, ownership is not described by the api
-//   GenImageFontAtlas           const GlyphInfo * array
-//   UnloadFontData              GlyphInfo * array
-//   DrawTextCodepoints          const int * array
-//   MeasureTextCodepoints       const int * array
-//   LoadUTF8                    returns char *, ownership is not described by the api
-//   UnloadUTF8                  raw char * buffer parameter
-//   LoadCodepoints              returns int *, ownership is not described by the api
-//   UnloadCodepoints            int * out parameter
-//   GetCodepoint                int * out parameter
-//   GetCodepointNext            int * out parameter
-//   GetCodepointPrevious        int * out parameter
-//   CodepointToUTF8             int * out parameter
-//   LoadTextLines               returns char **, ownership is not described by the api
-//   UnloadTextLines             raw char ** buffer parameter
-//   TextCopy                    raw char * buffer parameter
-//   TextFormat                  variadic, use string.format
-//   GetTextBetween              returns char *, ownership is not described by the api
-//   TextReplace                 returns char *, ownership is not described by the api
-//   TextReplaceAlloc            returns char *, ownership is not described by the api
-//   TextReplaceBetween          returns char *, ownership is not described by the api
-//   TextReplaceBetweenAlloc     returns char *, ownership is not described by the api
-//   TextInsert                  returns char *, ownership is not described by the api
-//   TextInsertAlloc             returns char *, ownership is not described by the api
-//   TextJoin                    returns char *, ownership is not described by the api
-//   TextSplit                   returns char **, ownership is not described by the api
-//   TextAppend                  raw char * buffer parameter
-//   TextToUpper                 returns char *, ownership is not described by the api
-//   TextToLower                 returns char *, ownership is not described by the api
-//   TextToPascal                returns char *, ownership is not described by the api
-//   TextToSnake                 returns char *, ownership is not described by the api
-//   TextToCamel                 returns char *, ownership is not described by the api
-//   DrawTriangleStrip3D         const Vector3 * array
-//   LoadModelFromMesh           takes ownership of its argument's buffers
-//   UpdateMeshBuffer            raw const void * buffer parameter
-//   DrawMeshInstanced           const Matrix * array
-//   LoadMaterials               returns Material *, ownership is not described by the api
-//   LoadWaveFromMemory          const unsigned char * array
-//   LoadSoundAlias              returns a handle borrowing another handle's allocation
-//   UpdateSound                 raw const void * buffer parameter
-//   UnloadSoundAlias            consumes a handle borrowing another handle's allocation
-//   LoadWaveSamples             returns float *, ownership is not described by the api
-//   UnloadWaveSamples           float * out parameter
-//   LoadMusicStreamFromMemory   const unsigned char * array
-//   UpdateAudioStream           raw const void * buffer parameter
-//   SetAudioStreamCallback      takes the C callback AudioCallback
-//   AttachAudioStreamProcessor  takes the C callback AudioCallback
-//   DetachAudioStreamProcessor  takes the C callback AudioCallback
-//   AttachAudioMixedProcessor   takes the C callback AudioCallback
-//   DetachAudioMixedProcessor   takes the C callback AudioCallback
-//   Vector3OrthoNormalize       Vector3 * out parameter
-//   Vector3ToFloatV             cannot return float3
-//   MatrixToFloatV              cannot return float16
-//   QuaternionToAxisAngle       Vector3 * out parameter
-//   MatrixDecompose             Vector3 * out parameter
+//   InitWindow                     the host owns the window
+//   CloseWindow                    the host owns the window
+//   SetWindowIcons                 Image * array
+//   GetWindowHandle                returns void *, ownership is not described by the api
+//   SetShaderValueV                raw const void * buffer parameter
+//   LoadRandomSequence             returns int *, ownership is not described by the api
+//   UnloadRandomSequence           no supported function yields a random sequence
+//   TraceLog                       variadic, use string.format
+//   SetTraceLogCallback            takes the C callback TraceLogCallback
+//   MemAlloc                       returns void *, ownership is not described by the api
+//   MemRealloc                     returns void *, ownership is not described by the api
+//   MemFree                        raw void * buffer parameter
+//   UnloadFileData                 the host returns buffers, which Luau collects
+//   ExportDataAsCode               const unsigned char * array
+//   UnloadFileText                 the host returns strings, which Luau collects
+//   SetLoadFileDataCallback        takes the C callback LoadFileDataCallback
+//   SetSaveFileDataCallback        takes the C callback SaveFileDataCallback
+//   SetLoadFileTextCallback        takes the C callback LoadFileTextCallback
+//   SetSaveFileTextCallback        takes the C callback SaveFileTextCallback
+//   LoadDirectoryFilesEx           use LoadDirectoryFiles, it takes a recursive flag
+//   UnloadDirectoryFiles           the host returns tables, which Luau collects
+//   UnloadDroppedFiles             the host returns tables, which Luau collects
+//   CompressData                   returns unsigned char *, ownership is not described by the api
+//   DecompressData                 returns unsigned char *, ownership is not described by the api
+//   EncodeDataBase64               returns char *, ownership is not described by the api
+//   DecodeDataBase64               returns unsigned char *, ownership is not described by the api
+//   ComputeCRC32                   hashes a counted input buffer, not an out parameter
+//   ComputeMD5                     returns a static internal array, no ownership to describe
+//   ComputeSHA1                    returns a static internal array, no ownership to describe
+//   ComputeSHA256                  returns a static internal array, no ownership to describe
+//   LoadAutomationEventList        useless without SetAutomationEventList
+//   UnloadAutomationEventList      useless without SetAutomationEventList
+//   ExportAutomationEventList      useless without SetAutomationEventList
+//   SetAutomationEventList         raylib keeps the pointer past the call
+//   SetAutomationEventBaseFrame    useless without SetAutomationEventList
+//   StartAutomationEventRecording  crashes without SetAutomationEventList
+//   StopAutomationEventRecording   useless without SetAutomationEventList
+//   PlayAutomationEvent            scripts cannot fill event params, it plays no-ops
+//   GetShapesTexture               borrows raylib's internal texture, unloading it breaks the renderer
+//   DrawLineStrip                  const Vector2 * array
+//   DrawTriangleFan                const Vector2 * array
+//   DrawTriangleStrip              const Vector2 * array
+//   DrawSplineLinear               const Vector2 * array
+//   DrawSplineBasis                const Vector2 * array
+//   DrawSplineCatmullRom           const Vector2 * array
+//   DrawSplineBezierQuadratic      const Vector2 * array
+//   DrawSplineBezierCubic          const Vector2 * array
+//   CheckCollisionPointPoly        const Vector2 * array
+//   CheckCollisionLines            Vector2 * out parameter
+//   LoadImageAnim                  int * out parameter
+//   LoadImageAnimFromMemory        const unsigned char * array
+//   LoadImageFromMemory            const unsigned char * array
+//   ExportImageToMemory            returns unsigned char *, ownership is not described by the api
+//   ImageKernelConvolution         const float * array
+//   LoadImageColors                returns Color *, ownership is not described by the api
+//   LoadImagePalette               returns Color *, ownership is not described by the api
+//   UnloadImageColors              Color * out parameter
+//   UnloadImagePalette             Color * out parameter
+//   ImageDrawTriangleFan           const Vector2 * array
+//   ImageDrawTriangleStrip         const Vector2 * array
+//   UpdateTextureRec               raw const void * buffer parameter
+//   GetPixelColor                  raw void * buffer parameter
+//   SetPixelColor                  raw void * buffer parameter
+//   LoadFontEx                     const int * array
+//   LoadFontFromMemory             const unsigned char * array
+//   LoadFontData                   returns GlyphInfo *, ownership is not described by the api
+//   GenImageFontAtlas              const GlyphInfo * array
+//   UnloadFontData                 GlyphInfo * array
+//   DrawTextCodepoints             const int * array
+//   MeasureTextCodepoints          const int * array
+//   LoadUTF8                       returns char *, ownership is not described by the api
+//   UnloadUTF8                     raw char * buffer parameter
+//   LoadCodepoints                 returns int *, ownership is not described by the api
+//   UnloadCodepoints               int * out parameter
+//   GetCodepoint                   int * out parameter
+//   GetCodepointNext               int * out parameter
+//   GetCodepointPrevious           int * out parameter
+//   CodepointToUTF8                int * out parameter
+//   LoadTextLines                  returns char **, ownership is not described by the api
+//   UnloadTextLines                raw char ** buffer parameter
+//   TextCopy                       raw char * buffer parameter
+//   TextFormat                     variadic, use string.format
+//   GetTextBetween                 returns char *, ownership is not described by the api
+//   TextReplace                    returns char *, ownership is not described by the api
+//   TextReplaceAlloc               returns char *, ownership is not described by the api
+//   TextReplaceBetween             returns char *, ownership is not described by the api
+//   TextReplaceBetweenAlloc        returns char *, ownership is not described by the api
+//   TextInsert                     returns char *, ownership is not described by the api
+//   TextInsertAlloc                returns char *, ownership is not described by the api
+//   TextJoin                       returns char *, ownership is not described by the api
+//   TextSplit                      returns char **, ownership is not described by the api
+//   TextAppend                     raw char * buffer parameter
+//   TextToUpper                    returns char *, ownership is not described by the api
+//   TextToLower                    returns char *, ownership is not described by the api
+//   TextToPascal                   returns char *, ownership is not described by the api
+//   TextToSnake                    returns char *, ownership is not described by the api
+//   TextToCamel                    returns char *, ownership is not described by the api
+//   DrawTriangleStrip3D            const Vector3 * array
+//   LoadModelFromMesh              takes ownership of its argument's buffers
+//   UpdateMeshBuffer               raw const void * buffer parameter
+//   DrawMeshInstanced              const Matrix * array
+//   LoadMaterials                  returns Material *, ownership is not described by the api
+//   LoadWaveFromMemory             const unsigned char * array
+//   LoadSoundAlias                 returns a handle borrowing another handle's allocation
+//   UpdateSound                    raw const void * buffer parameter
+//   UnloadSoundAlias               consumes a handle borrowing another handle's allocation
+//   LoadWaveSamples                returns float *, ownership is not described by the api
+//   UnloadWaveSamples              float * out parameter
+//   LoadMusicStreamFromMemory      const unsigned char * array
+//   UpdateAudioStream              raw const void * buffer parameter
+//   SetAudioStreamCallback         takes the C callback AudioCallback
+//   AttachAudioStreamProcessor     takes the C callback AudioCallback
+//   DetachAudioStreamProcessor     takes the C callback AudioCallback
+//   AttachAudioMixedProcessor      takes the C callback AudioCallback
+//   DetachAudioMixedProcessor      takes the C callback AudioCallback
+//   Vector3OrthoNormalize          Vector3 * out parameter
+//   Vector3ToFloatV                cannot return float3
+//   MatrixToFloatV                 cannot return float16
+//   QuaternionToAxisAngle          Vector3 * out parameter
+//   MatrixDecompose                Vector3 * out parameter

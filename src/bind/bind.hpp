@@ -25,9 +25,8 @@ inline constexpr int kReleasedTag = LUA_UTAG_LIMIT - 1;
 template <typename T, typename Enable = void>
 struct Conv;
 
-// check the range before converting because out of range floating point to
-// integer casts are undefined, kHigh is exclusive because max() may not be
-// representable as double
+// out of range floating point to integer casts are undefined
+// kHigh is exclusive because max() may not be representable as double
 template <typename T>
 inline T CheckIntegral(lua_State *L, int narg) {
     constexpr double kLow = static_cast<double>(std::numeric_limits<T>::min());
@@ -59,7 +58,6 @@ struct Conv<bool> {
 template <>
 struct Conv<const char *> {
     static const char *Check(lua_State *L, int narg) { return luaL_checkstring(L, narg); }
-    // NULL string results map to nil
     static void Push(lua_State *L, const char *value) {
         if (value != nullptr)
             lua_pushstring(L, value);
@@ -84,8 +82,7 @@ inline bool IsReleased(lua_State *L, int narg, const char *name) {
     return same;
 }
 
-// a released userdata keeps its metatable, so identity tells an unloaded value
-// of this type apart from an unrelated one
+// a released userdata keeps its metatable, so identity still names the type
 inline void BadArgument(lua_State *L, int narg, const char *name) {
     if (IsReleased(L, narg, name))
         luaL_error(L, "%s has been unloaded", name);
@@ -114,14 +111,12 @@ struct Conv<T, std::enable_if_t<UdTraits<T>::kBound>> {
     static void Push(lua_State *L, const T &value) { NewUd<T>(L, value); }
 };
 
-// writable struct pointers refer to userdata in place, the pointer must not
-// escape the call
+// points into the userdata, the pointer must not escape the call
 template <typename T>
 struct Conv<T *, std::enable_if_t<UdTraits<T>::kBound>> {
     static T *Check(lua_State *L, int narg) { return CheckUd<T>(L, narg); }
 };
 
-// adapts a member pointer to userdata field accessors
 template <auto Member>
 struct Field;
 

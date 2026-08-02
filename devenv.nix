@@ -14,8 +14,6 @@
     pkgs.pkg-config
     pkgs.emscripten
 
-    # luau-lsp uses the generated definitions:
-    # luau-lsp analyze --definitions=types/raylib.d.luau game/*.luau
     # the game embeds the Luau version pinned in build.zig.zon
     pkgs.luau
     pkgs.luau-lsp

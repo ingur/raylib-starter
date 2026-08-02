@@ -35,7 +35,7 @@ bool quit;
 bool devMode;
 bool watch;
 ScriptState reloadState;
-bool retained;  // reloadState is waiting for an after_reload that accepts it
+bool retained;  // held until an after_reload accepts it
 
 int CfgInt(lua_State *L, int table, const char *key, int fallback) {
     lua_getfield(L, table, key);
@@ -106,7 +106,7 @@ void LoadWindowConfig() {
                  | (CfgFlag(L, table, "msaa", false) ? (unsigned int)FLAG_MSAA_4X_HINT : 0u)
                  | (CfgFlag(L, table, "fullscreen", false) ? (unsigned int)FLAG_FULLSCREEN_MODE : 0u);
 
-    lua_pop(L, 1);  // the config table
+    lua_pop(L, 1);
 }
 
 bool Boot() {
@@ -124,7 +124,7 @@ void Reload() {
         if (script.CallGlobal("before_reload", &missing)) {
             ScriptState state;
             if (script.TakeResultState(state)) {
-                if (!retained) {  // keep retained state until it applies
+                if (!retained) {
                     reloadState = std::move(state);
                     retained = true;
                 }
@@ -150,7 +150,7 @@ void Reload() {
             reloadState = ScriptState{};
             retained = false;
         } else {
-            scriptOk = false;  // state is kept for the next successful boot
+            scriptOk = false;
         }
     }
     TraceLog(LOG_INFO, scriptOk ? "SCRIPT: reloaded" : "SCRIPT: reload failed");
@@ -171,7 +171,6 @@ enum { ERR_PAD = 40, ERR_FONT = 20, ERR_LINE = ERR_FONT + 2 };
 
 char wrappedError[4096];
 
-// copy the script error into wrappedError, breaking lines that exceed maxWidth
 void WrapError(int maxWidth) {
     char *dst = wrappedError, *lineStart = wrappedError;
     char *end = wrappedError + sizeof(wrappedError) - 3;
@@ -296,7 +295,7 @@ int main(void) {
     MakeDirectory("save");  // writable save dir, on web an IDBFS mount (src/web/save.js)
 #endif
 #if !defined(NDEBUG)
-    devMode = true;  // debug builds get the DEV global
+    devMode = true;  // becomes the DEV global
 #endif
 #if !defined(__EMSCRIPTEN__)
     const char *w = std::getenv("WATCH");  // ./build.sh dev sets WATCH=1

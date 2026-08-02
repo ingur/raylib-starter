@@ -4,8 +4,8 @@
     .minimum_zig_version = "0.16.0",
     .fingerprint = 0x232b318cede6101e,
 
-    // Update dependencies here, `zig fetch --save=<name> <url>` pins the hash.
-    // After a raylib bump, rerun `bindgen` to refresh the raylib bindings.
+    // `zig fetch --save=<name> <url>` pins the hash
+    // after a raylib bump, run ./build.sh bindgen
     .dependencies = .{
         .raylib = .{
             .url = "https://github.com/raysan5/raylib/archive/refs/tags/6.0.tar.gz",
