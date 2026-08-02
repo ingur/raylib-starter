@@ -165,5 +165,5 @@ Every case is listed with its reason in the report at the end of `src/bind/rayli
 ## Credits
 
 - [raylib](https://github.com/raysan5/raylib) for the amazing library
-- [Luau](https://github.com/luau-lang/luau) for the fast, embeddable scripting language
+- [Luau](https://github.com/luau-lang/luau) for the embeddable language
 - [miniz](https://github.com/richgel999/miniz) for zip-based asset packing
