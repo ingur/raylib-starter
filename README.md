@@ -1,13 +1,27 @@
-# raylib-starter
+<p align="center">
+  <img src="https://github.com/ingur/raylib-starter/assets/45173070/ae6b5749-c53d-470d-8dc2-36460d37ac5a"/>
+</p>
 
-A minimal [raylib](https://github.com/raysan5/raylib) 6.0 game template using [Luau](https://github.com/luau-lang/luau) 0.732 with a C++17 host.
+<h1 align="center">raylib-starter</h1>
 
+<p align="center">
+  My personal, minimal game template for creating cross-platform
+  <a href="https://github.com/raysan5/raylib">raylib</a>
+  games in <a href="https://github.com/luau-lang/luau">Luau</a>, with a C++17 host.
+</p>
+
+## Features
+
+- raylib ([6.0](https://github.com/raysan5/raylib/releases/tag/6.0)) and Luau ([0.732](https://github.com/luau-lang/luau/releases/tag/0.732)), built from source and version pinned
 - Linux x64, Windows x64, and web targets
 - Native code generation on desktop
 - Hot reload
 - Generated raylib bindings and Luau definitions
 - Zip asset packing with loose-file overrides
 - Persistent `save/` storage, backed by IndexedDB on web
+
+> [!NOTE]
+> The previous LuaJIT (and C/C++) version lives on the [`luajit`](https://github.com/ingur/raylib-starter/tree/luajit) branch, and the previous pocketpy version on the [`pocketpy`](https://github.com/ingur/raylib-starter/tree/pocketpy) branch.
 
 ## Requirements
 
@@ -18,7 +32,8 @@ A minimal [raylib](https://github.com/raysan5/raylib) 6.0 game template using [L
 - `curl` and Python 3 for `./build.sh bindgen`
 - Optional: [luau-lsp](https://github.com/JohnnyMorganz/luau-lsp) for editor support
 
-See the [system dependencies](https://github.com/ingur/raylib-starter/wiki/System-dependencies) page for installation commands.
+> [!TIP]
+> See the [system dependencies](https://github.com/ingur/raylib-starter/wiki/System-dependencies) page for installation commands.
 
 ## Start
 
@@ -138,5 +153,3 @@ for the callbacks, since the audio thread cannot enter the one Luau VM.
 - Change the binary name in `build.zig`
 - Change dependency versions in `build.zig.zon`
 - Run `./build.sh bindgen` after changing the raylib version
-
-Previous implementations remain on the [`luajit`](https://github.com/ingur/raylib-starter/tree/luajit) and [`pocketpy`](https://github.com/ingur/raylib-starter/tree/pocketpy) branches.
