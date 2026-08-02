@@ -43,7 +43,8 @@ cd raylib-starter
 ./build.sh run
 ```
 
-The first build downloads and compiles raylib and Luau. Later builds are incremental. Build output goes to `zig-out/`.
+> [!NOTE]
+> The first build downloads and compiles raylib and Luau. Later builds are incremental. Build output goes to `zig-out/`.
 
 Useful commands:
 
@@ -54,6 +55,23 @@ Useful commands:
 ```
 
 `run` defaults to a debug build. Other build commands default to release.
+
+## Example
+
+```luau
+local rl = raylib
+
+-- top level runs once at boot, the window is already open.
+-- define update(), it runs every frame (return true to quit)
+function update()
+    rl.BeginDrawing()
+
+    rl.ClearBackground(rl.RAYWHITE)
+    rl.DrawText("Congrats! You created your first window!", 190, 200, 20, rl.LIGHTGRAY)
+
+    rl.EndDrawing()
+end
+```
 
 ## Game scripts
 
@@ -118,13 +136,7 @@ The template does not bind every raylib function.
 
 ## Limitations
 
-The binding answers for what it introduces, the Luau side of a value, the life
-of a handle, an open scope, and anything the virtual filesystem moves. raylib
-keeps its own parameter contracts, so a call that is wrong in C is wrong here
-for the same reason and in the same way.
-
-What C raylib does that a script here cannot. Every case is listed with its
-reason in the report at the end of `src/bind/raylib_bind.cpp`.
+Every case is listed with its reason in the report at the end of `src/bind/raylib_bind.cpp`.
 
 - The audio stream callback and the mixed processors. They run on raylib's audio thread and one Luau VM is not thread safe
 - `SetTraceLogCallback`, a variadic C callback, and the four file callback setters, which are how the virtual filesystem is installed
@@ -135,10 +147,6 @@ reason in the report at the end of `src/bind/raylib_bind.cpp`.
 - Calls returning an owning pointer, `LoadImageColors` and `LoadCodepoints` among them. Luau's `buffer`, `string` and `utf8` cover the usual reasons to want them
 - The `Text*` helpers that build a new string, `TextFormat`, `TextSplit`, `TextToUpper` and the rest. Luau's `string` and `utf8` do this natively, the ones that only read, such as `TextLength` and `TextSubtext`, are bound
 - The compression, encoding and hashing helpers, which Luau has no equivalent for
-
-These are what the generic binding cannot express. A project can add a purpose
-built adapter beside the generated code where that is feasible, which it is not
-for the callbacks, since the audio thread cannot enter the one Luau VM.
 
 ## Editor setup
 
@@ -153,3 +161,9 @@ for the callbacks, since the audio thread cannot enter the one Luau VM.
 - Change the binary name in `build.zig`
 - Change dependency versions in `build.zig.zon`
 - Run `./build.sh bindgen` after changing the raylib version
+
+## Credits
+
+- [raylib](https://github.com/raysan5/raylib) for the amazing library
+- [Luau](https://github.com/luau-lang/luau) for the fast, embeddable scripting language
+- [miniz](https://github.com/richgel999/miniz) for zip-based asset packing
